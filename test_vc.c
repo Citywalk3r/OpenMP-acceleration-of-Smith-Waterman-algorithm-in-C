@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
-
+//Kappa kappa kappa
 //flags
 const char* name_flag = "-name";
 const char* input_flag = "-input";
@@ -14,6 +14,7 @@ const char* match_flag = "-match";
 const char* mismatch_flag = "-mismatch";
 const char* gap_flag = "-gap";
 const int line_size = 256;
+const int papis = 8;
 
 typedef struct Node{
     int value;
