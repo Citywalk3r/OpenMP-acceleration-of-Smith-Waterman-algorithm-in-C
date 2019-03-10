@@ -1,1 +1,5 @@
 Datasets/
+.directory
+test
+valgrind-out.txt
+Report_output.txt
