@@ -25,7 +25,7 @@ const char* gap_flag = "-gap";
 const int line_size = 256;
 
 typedef struct Node{
-    int value;
+    long int value;
     struct Node *prev; 
 }Node;
 
@@ -49,7 +49,7 @@ char* concat(const char* s1, const char* s2,  const char* s3,  const char* s4) {
     }
 }
 
-int max(int a, int b, int c){
+int max(long int a, long int b, long int c){
     if (a > b){
         if (a > c)
             return a;
@@ -222,15 +222,41 @@ int parse_file(FILE* in_file, char* q, char* d){
     return 1;
 }
 
-int create_score_matrix(int match, int mismatch, int gap, char* q, char* d){
+int calculate_score(long int c, Node (*score_matrix)[c], long int match, long int mismatch,\
+                    long int gap, char* q, char* d){
+    long int diagonal, up, left;
+    
+    for (int i = 1; i < strlen(q); i++){
+        for (int j = 1; j < strlen(d); j++){
+            if (q[i-1] == d[j-1])
+                diagonal = score_matrix[i-1][j-1].value + match;
+            else 
+                diagonal = score_matrix[i-1][j-1].value + mismatch;
+            up = score_matrix[i-1][j].value + gap;
+            left = score_matrix[i][j-1].value + gap;
+            
+            score_matrix[i][j].value = max(diagonal, up, left);
+        }
+    }
+    return 1;
+}
+
+int create_score_matrix(long int match, long int mismatch, long int gap, char* q, char* d){
     long unsigned int rows = strlen(q) + 1;
     long unsigned int columns = strlen(d) + 1;
     Node (*score_matrix)[columns] = malloc(sizeof(Node[rows][columns]));
-    score_matrix[0][0].value = 0;
-    score_matrix[0][1].value = 1;
-    score_matrix[1][0].value = 2;
-    printf("%d %d %d\n", score_matrix[0][0].value, score_matrix[0][0].value,\
-    score_matrix[0][0].value);
+    
+    for (int i = 0; i < rows; i++){
+        score_matrix[i][0].value = 0;
+        score_matrix[i][0].prev = NULL;
+    }
+    for (int i = 0; i < columns; i++){
+        score_matrix[0][i].value = 0;
+        score_matrix[0][i].prev = NULL;
+    }
+    
+    calculate_score(columns, score_matrix, match, mismatch, gap, q, d);
+    printf("Score of cell [%d][%d] is %ld\n", 15, 32, score_matrix[15][32].value);
     free(score_matrix);
     return 1;
 }
@@ -269,12 +295,12 @@ int main(int argc, char* argv[]) {
         char *q = malloc(sizeof(char[q_size+1]));
         char *d = malloc(sizeof(char[d_size+1]));
         check = parse_file(in_file, q, d);
-        printf("len of Q: %lu\n", strlen(q));
-        printf("len of D: %lu\n", strlen(d));
-        printf("Q: %s\n", q);
-        printf("D: %s\n", d);
-        printf("Q[0]: %c\n", q[0]);
-        printf("D[0]: %c\n", d[0]);
+//         printf("len of Q: %lu\n", strlen(q));
+//         printf("len of D: %lu\n", strlen(d));
+//         printf("Q: %s\n", q);
+//         printf("D: %s\n", d);
+//         printf("Q[0]: %c\n", q[0]);
+//         printf("D[0]: %c\n", d[0]);
         if (check == 1){
             free(q);
             free(d);
