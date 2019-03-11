@@ -1,8 +1,15 @@
 #!/bin/sh
-read -p "Dataset you want to run: " d
-read -p "Match: " m
-read -p "Mismatch: " mm
-read -p "Gap: " g
+if [ "$1" == "-d" ]; then
+	d="11"
+	m="3"
+	mm="-1"
+	g="-1"
+else
+	read -p "Dataset you want to run: " d
+	read -p "Match: " m
+	read -p "Mismatch: " mm
+	read -p "Gap: " g
+fi
 gcc -Wall -o test -ggdb3 test_vc.c
 valgrind --leak-check=full \
          --show-leak-kinds=all \

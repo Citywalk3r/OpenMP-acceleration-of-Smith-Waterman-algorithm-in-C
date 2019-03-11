@@ -48,24 +48,25 @@ int push(Node* cell){
     return 0;
 }
 
-int pop(){
+Node* pop(){
     if (max_score == NULL) {
-        printf("ERROR: Stack Underflow\n");
-        return 1;
+        printf("ERROR: Stack Underflow in POP\n");
+        return NULL;
     }
 	MVP* temp = max_score;
 	max_score = max_score->next;
+	Node* result = temp->cell;
 	free(temp);
 	
-    return 0;
+    return result;
 }
 
 int empty(){
     if (max_score == NULL) {
-        printf("ERROR: Stack Underflow\n");
-        return 1;
+//         printf("ERROR: Stack Underflow in EMPTY\n");
+        return 0;
     }
-	while (max_score) {
+	while (max_score != NULL) {
 		pop();
 	}
     return 0;
@@ -265,16 +266,21 @@ int calculate_score(long int c, Node (*score_matrix)[c], long int match, long in
     long int diagonal, up, left;
     push(&score_matrix[0][0]);
     
-    for (int i = 1; i < strlen(q); i++){
-        for (int j = 1; j < strlen(d); j++){
+    for (int i = 1; i <= strlen(q); i++){
+        for (int j = 1; j <= strlen(d); j++){
             if (q[i-1] == d[j-1])
                 diagonal = score_matrix[i-1][j-1].value + match;
             else 
                 diagonal = score_matrix[i-1][j-1].value + mismatch;
             up = score_matrix[i-1][j].value + gap;
             left = score_matrix[i][j-1].value + gap;
-            
+			
             score_matrix[i][j].value = max(diagonal, up, left);
+			if (score_matrix[i][j].value < 0) score_matrix[i][j].value = 0;
+			
+			printf("\nDiag: %ld\nUp: %ld\nLeft: %ld\nQ: %c, D: %c\nValue: %ld\n",\
+					diagonal, up, left, q[i-1], d[j-1], score_matrix[i][j].value);			
+			
             if (max_score->cell->value < score_matrix[i][j].value){
                 empty();
                 push(&score_matrix[i][j]);
@@ -306,7 +312,9 @@ int create_score_matrix(long int match, long int mismatch, long int gap, char* q
         free(score_matrix);
         return 1;
     }
-    printf("Max score: %ld\n", max_score->cell->value);
+    while (max_score != NULL){
+		printf("Max score: %ld\n", pop()->value);
+	}
     free(score_matrix);
     return 0;
 }

@@ -1,6 +1,5 @@
 Datasets/
 .directory
 test
-valgrind*
 Report_*
 labdesc*
