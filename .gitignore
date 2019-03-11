@@ -1,5 +1,6 @@
 Datasets/
 .directory
 test
-valgrind-out.txt
-Report_output.txt
+valgrind*
+Report_*
+labdesc*

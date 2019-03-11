@@ -64,15 +64,12 @@ int pop(){
 }
 
 int empty(){
-    MVP* temp;
     if (max_score == NULL) {
         printf("ERROR: Stack Underflow\n");
         return 1;
     } else {
         while (max_score != NULL) {
-            temp = max_score;
-            max_score = temp->next;
-            free(temp);
+            pop();
         }
         
     }
@@ -285,9 +282,9 @@ int calculate_score(long int c, Node (*score_matrix)[c], long int match, long in
             score_matrix[i][j].value = max(diagonal, up, left);
             if (max_score->cell->value < score_matrix[i][j].value){
                 empty();
-                push(&score_matrix[0][0]);
+                push(&score_matrix[i][j]);
             } else if (max_score->cell->value == score_matrix[i][j].value){
-                push(&score_matrix[0][0]);
+                push(&score_matrix[i][j]);
             } else {
                 
             }
@@ -314,7 +311,6 @@ int create_score_matrix(long int match, long int mismatch, long int gap, char* q
         free(score_matrix);
         return 1;
     }
-    printf("Score of cell [%d][%d] is %ld\n", 15, 32, score_matrix[15][32].value);
     printf("Max score: %ld\n", max_score->cell->value);
     free(score_matrix);
     return 0;
@@ -375,7 +371,8 @@ int main(int argc, char* argv[]) {
             free(d);
             free(max_score);
             break;
-        } 
+        }
+        empty();
         free(q);
         free(d);
         free(max_score);
