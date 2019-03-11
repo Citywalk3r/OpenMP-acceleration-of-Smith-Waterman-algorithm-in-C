@@ -34,11 +34,10 @@ typedef struct MVP{
     struct MVP *next;
 }MVP;
 
-MVP* max_score;
+MVP* max_score = NULL;
 
 int push(Node* cell){
-    MVP* temp;
-    temp = (struct MVP*)malloc(sizeof(struct MVP));
+    MVP* temp = (struct MVP*)malloc(sizeof(struct MVP));
     if (!temp){
         printf("ERROR: Overflowing Heap\n");
         return 1;
@@ -50,16 +49,14 @@ int push(Node* cell){
 }
 
 int pop(){
-    MVP* temp;
     if (max_score == NULL) {
         printf("ERROR: Stack Underflow\n");
         return 1;
-    } else {
-        temp = max_score;
-        max_score = max_score->next;
-        temp->next = NULL;
-        free(temp);
     }
+	MVP* temp = max_score;
+	max_score = max_score->next;
+	free(temp);
+	
     return 0;
 }
 
@@ -67,16 +64,14 @@ int empty(){
     if (max_score == NULL) {
         printf("ERROR: Stack Underflow\n");
         return 1;
-    } else {
-        while (max_score != NULL) {
-            pop();
-        }
-        
     }
+	while (max_score) {
+		pop();
+	}
     return 0;
 }
 
-char* concat(const char* s1, const char* s2,  const char* s3,  const char* s4) {
+char* concat(const char* s1, const char* s2, const char* s3, const char* s4) {
     char* result = malloc(strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4) + 1);
     if (result) {
         strcpy(result, s1);
@@ -142,7 +137,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         return 1;
     }
     
-    if ((*in_file = fopen(input, "r")) == NULL) {   
+    if ((*in_file = fopen(input, "r")) == NULL) { 
         printf("ERROR: Could not open input file \"%s.txt\"\n", input);
         return 1;
     } 
@@ -154,7 +149,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         return 1;
     }
     
-    if ((*out_file = fopen(out_source, "w")) == NULL) {   
+    if ((*out_file = fopen(out_source, "w")) == NULL) { 
         printf("ERROR: Could not make the file \"%s/%s.txt\"\n", cwd, name);
         free(out_source);
         return 1;
@@ -166,7 +161,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
 int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int *d_size){
     char* line = malloc(line_size*sizeof(char));
     
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"Pairs:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing Pair number!\n");
@@ -185,7 +180,7 @@ int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int 
         free(line);
         return 1;
     }
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"Q_Sz_Max:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing Q_Sz_Max number!\n");
@@ -199,7 +194,7 @@ int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int 
         free(line);
         return 1;
     }
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"D_Sz_All:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing D_Sz_All number!\n");
@@ -245,7 +240,7 @@ int parse_file(FILE* in_file, char* q, char* d){
                 return 1;
             }
             sscanf(line, "D:\t%[^\n]", line);
-            strcpy(d, line);       
+            strcpy(d, line);
             flag = 0;
         } else if (strncmp(line, "\t", 1) == 0 || strncmp(line, "  ", 2) == 0) {
             if (flag == 1){
@@ -355,32 +350,31 @@ int main(int argc, char* argv[]) {
         if (check == 1){
             free(q);
             free(d);
-            free(max_score);
+            empty();
             return 1;
         } 
         
         if (create_score_matrix(match, mismatch, gap, q, d) == 1){
             free(q);
             free(d);
-            free(max_score);
+            empty();
             return 1;
         }
         
         if (check == 2){
             free(q);
             free(d);
-            free(max_score);
+            empty();
             break;
         }
-        empty();
         free(q);
         free(d);
-        free(max_score);
+        empty();
         pairs++;
     } 
     
     fclose(in_file);
     fclose(out_file);
     
-    return 0;  
+    return 0;
 }
