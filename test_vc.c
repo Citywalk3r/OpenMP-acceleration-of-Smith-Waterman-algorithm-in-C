@@ -304,8 +304,16 @@ int calculate_score(long int c, Node (*score_matrix)[c], long int match, long in
 			} else {
 				//Ties go diag > left > up
 				if (score_matrix[i][j].value == diagonal){
-					score_matrix[i][j].prev = &score_matrix[i-1][j-1];
-					score_matrix[i][j].direction = 'd';
+					if (score_matrix[i][j].value == score_matrix[i-1][j].value){
+						score_matrix[i][j].prev = &score_matrix[i-1][j];
+						score_matrix[i][j].direction = 'u';
+					} else if (score_matrix[i][j].value == score_matrix[i][j-1].value) {
+						score_matrix[i][j].prev = &score_matrix[i][j-1];
+						score_matrix[i][j].direction = 'l';
+					} else {
+						score_matrix[i][j].prev = &score_matrix[i-1][j-1];
+						score_matrix[i][j].direction = 'd';
+					}
 				} else if (score_matrix[i][j].value == left){
 					score_matrix[i][j].prev = &score_matrix[i][j-1];
 					score_matrix[i][j].direction = 'l';
@@ -342,9 +350,13 @@ int traceback(MVP* *max_score, FILE* out_file, char* q, char* d){
 			starty = search->posy;
 			search = search->prev;
 		}
+// 		char* tempx = malloc((stopx-startx+1))
+		
 		fprintf(out_file, "Match %d [Score: %ld, Start: %ld, Stop: %ld]\n",\
 				count, (*max_score)->cell->value, starty, stopy);
-		printf("%ld, %ld\n", startx, stopx);
+		fprintf(out_file, "\t\tD:%.*s\n", (int)(stopy-starty+1), &d[starty]);
+		fprintf(out_file, "\t\tQ:%.*s\n", (int)(stopx-startx+1), &q[startx]);
+		fprintf(out_file, "\n");
 		pop(max_score);
 		count++;
 	}
