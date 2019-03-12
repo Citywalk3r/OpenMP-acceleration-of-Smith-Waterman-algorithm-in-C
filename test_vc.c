@@ -25,8 +25,9 @@ const char* gap_flag = "-gap";
 const int line_size = 256;
 
 typedef struct Node{
-    long int value;
-    struct Node *prev; 
+    long int value, posx, posy;
+    struct Node *prev;
+	char direction;
 }Node;
 
 typedef struct MVP{
@@ -34,49 +35,43 @@ typedef struct MVP{
     struct MVP *next;
 }MVP;
 
-MVP* max_score;
-
-int push(Node* cell){
-    MVP* temp;
-    temp = (struct MVP*)malloc(sizeof(struct MVP));
+int push(MVP* *max_score, Node* cell){
+    MVP* temp = (struct MVP*)malloc(sizeof(struct MVP));
     if (!temp){
         printf("ERROR: Overflowing Heap\n");
         return 1;
     }
     temp->cell = cell;
-    temp->next = max_score;
-    max_score = temp;
+    temp->next = *max_score;
+    *max_score = temp;
     return 0;
 }
 
-int pop(){
-    MVP* temp;
-    if (max_score == NULL) {
-        printf("ERROR: Stack Underflow\n");
-        return 1;
-    } else {
-        temp = max_score;
-        max_score = max_score->next;
-        temp->next = NULL;
-        free(temp);
+Node* pop(MVP* *max_score){
+    if (*max_score == NULL) {
+        printf("ERROR: Stack Underflow in POP\n");
+        return NULL;
     }
-    return 0;
+	MVP* temp = *max_score;
+	Node* result = temp->cell;
+	(*max_score) = (*max_score)->next;
+	free(temp);
+	
+    return result;
 }
 
-int empty(){
-    if (max_score == NULL) {
-        printf("ERROR: Stack Underflow\n");
-        return 1;
-    } else {
-        while (max_score != NULL) {
-            pop();
-        }
-        
+int empty(MVP* *max_score){
+    if (*max_score == NULL) {
+//         printf("ERROR: Stack Underflow in EMPTY\n");
+        return 0;
     }
+	while (*max_score != NULL) {
+		pop(max_score);
+	}
     return 0;
 }
 
-char* concat(const char* s1, const char* s2,  const char* s3,  const char* s4) {
+char* concat(const char* s1, const char* s2, const char* s3, const char* s4) {
     char* result = malloc(strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4) + 1);
     if (result) {
         strcpy(result, s1);
@@ -142,7 +137,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         return 1;
     }
     
-    if ((*in_file = fopen(input, "r")) == NULL) {   
+    if ((*in_file = fopen(input, "r")) == NULL) { 
         printf("ERROR: Could not open input file \"%s.txt\"\n", input);
         return 1;
     } 
@@ -154,7 +149,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         return 1;
     }
     
-    if ((*out_file = fopen(out_source, "w")) == NULL) {   
+    if ((*out_file = fopen(out_source, "w")) == NULL) { 
         printf("ERROR: Could not make the file \"%s/%s.txt\"\n", cwd, name);
         free(out_source);
         return 1;
@@ -166,7 +161,7 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
 int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int *d_size){
     char* line = malloc(line_size*sizeof(char));
     
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"Pairs:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing Pair number!\n");
@@ -185,7 +180,7 @@ int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int 
         free(line);
         return 1;
     }
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"Q_Sz_Max:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing Q_Sz_Max number!\n");
@@ -199,7 +194,7 @@ int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int 
         free(line);
         return 1;
     }
-    if (fgets(line, line_size, in_file) != NULL) {
+    if (fgets(line, line_size, in_file)) {
         sscanf(line,"D_Sz_All:\t%[^\n]", line);
         if (!isdigit(*line)) {
             printf("ERROR: The dataset does not follow the format: Missing D_Sz_All number!\n");
@@ -218,7 +213,7 @@ int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int 
     return 0;
 }
 
-int parse_file(FILE* in_file, char* q, char* d){
+int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
     long int cnt = 0;
     int flag = 0;
     
@@ -235,7 +230,8 @@ int parse_file(FILE* in_file, char* q, char* d){
                 return 1;
             }
             sscanf(line, "Q:\t%[^\n]", line);
-            strcpy(q, line);
+            fprintf(out_file, "Q:\t\t%s\n", line);
+			strcpy(q, line);
             flag = 1;
             cnt++;
         } else if (strncmp(line, "D:", 2) == 0) {
@@ -245,14 +241,15 @@ int parse_file(FILE* in_file, char* q, char* d){
                 return 1;
             }
             sscanf(line, "D:\t%[^\n]", line);
-            strcpy(d, line);       
+			fprintf(out_file, "D:\t\t%s\n", line);
+            strcpy(d, line);
             flag = 0;
         } else if (strncmp(line, "\t", 1) == 0 || strncmp(line, "  ", 2) == 0) {
+			fprintf(out_file, "%s", line);
+			sscanf(line, "\t%[^\n]", line);
             if (flag == 1){
-                sscanf(line, "\t%[^\n]", line);
                 strcat(q, line);
             } else {
-                sscanf(line, "\t%[^\n]", line);
                 strcat(d, line);
             }
             
@@ -264,56 +261,94 @@ int parse_file(FILE* in_file, char* q, char* d){
     return 0;
 }
 
+int create_score_matrix(long unsigned int rows, long unsigned int columns,\
+						Node (*score_matrix)[columns]){
+    for (int i = 0; i < rows; i++){
+        score_matrix[i][0].value = 0;
+		score_matrix[i][0].posx = i;
+		score_matrix[i][0].posy = 0;
+        score_matrix[i][0].prev = NULL;
+		score_matrix[i][0].direction = 'N';
+    }
+    for (int i = 0; i < columns; i++){
+        score_matrix[0][i].value = 0;
+		score_matrix[0][i].posx = 0;
+		score_matrix[0][i].posy = i;
+        score_matrix[0][i].prev = NULL;
+		score_matrix[0][i].direction = 'N';
+    }
+    return 0;
+}
+
 int calculate_score(long int c, Node (*score_matrix)[c], long int match, long int mismatch,\
-                    long int gap, char* q, char* d){
+                    long int gap, char* q, char* d, MVP* *max_score){
     
     long int diagonal, up, left;
-    push(&score_matrix[0][0]);
+    push(max_score, &score_matrix[0][0]);
     
-    for (int i = 1; i < strlen(q); i++){
-        for (int j = 1; j < strlen(d); j++){
+    for (int i = 1; i <= strlen(q); i++){
+        for (int j = 1; j <= strlen(d); j++){
             if (q[i-1] == d[j-1])
                 diagonal = score_matrix[i-1][j-1].value + match;
             else 
                 diagonal = score_matrix[i-1][j-1].value + mismatch;
             up = score_matrix[i-1][j].value + gap;
             left = score_matrix[i][j-1].value + gap;
-            
+			score_matrix[i][j].posx = i-1;
+			score_matrix[i][j].posy = j-1;
             score_matrix[i][j].value = max(diagonal, up, left);
-            if (max_score->cell->value < score_matrix[i][j].value){
-                empty();
-                push(&score_matrix[i][j]);
-            } else if (max_score->cell->value == score_matrix[i][j].value){
-                push(&score_matrix[i][j]);
+			if (score_matrix[i][j].value < 0){
+				score_matrix[i][j].value = 0;
+				score_matrix[i][j].prev = NULL;
+				score_matrix[i][j].direction = 'N';
+			} else {
+				//Ties go diag > left > up
+				if (score_matrix[i][j].value == diagonal){
+					score_matrix[i][j].prev = &score_matrix[i-1][j-1];
+					score_matrix[i][j].direction = 'd';
+				} else if (score_matrix[i][j].value == left){
+					score_matrix[i][j].prev = &score_matrix[i][j-1];
+					score_matrix[i][j].direction = 'l';
+				} else {
+					score_matrix[i][j].prev = &score_matrix[i-1][j];
+					score_matrix[i][j].direction = 'u';
+				}
+			}
+            if ((*max_score)->cell->value < score_matrix[i][j].value){
+                empty(max_score);
+                push(max_score, &score_matrix[i][j]);
+            } else if ((*max_score)->cell->value == score_matrix[i][j].value){
+                push(max_score, &score_matrix[i][j]);
             } else {
-                
             }
         }
     }
     return 0;
 }
 
-int create_score_matrix(long int match, long int mismatch, long int gap, char* q, char* d){
-    long unsigned int rows = strlen(q) + 1;
-    long unsigned int columns = strlen(d) + 1;
-    Node (*score_matrix)[columns] = malloc(sizeof(Node[rows][columns]));
-    
-    for (int i = 0; i < rows; i++){
-        score_matrix[i][0].value = 0;
-        score_matrix[i][0].prev = NULL;
-    }
-    for (int i = 0; i < columns; i++){
-        score_matrix[0][i].value = 0;
-        score_matrix[0][i].prev = NULL;
-    }
-    
-    if (calculate_score(columns, score_matrix, match, mismatch, gap, q, d) == 1){
-        free(score_matrix);
-        return 1;
-    }
-    printf("Max score: %ld\n", max_score->cell->value);
-    free(score_matrix);
-    return 0;
+int traceback(MVP* *max_score, FILE* out_file, char* q, char* d){
+	int count = 1;
+	long int startx = 0;
+	long int stopx = 0;
+	long int starty = 0;
+	long int stopy = 0;
+	Node* search;
+	while(*max_score != NULL){
+		search = (*max_score)->cell;
+		stopx = search->posx;
+		stopy = search->posy;
+		while(search->prev != NULL){
+			startx = search->posx;
+			starty = search->posy;
+			search = search->prev;
+		}
+		fprintf(out_file, "Match %d [Score: %ld, Start: %ld, Stop: %ld]\n",\
+				count, (*max_score)->cell->value, starty, stopy);
+		printf("%ld, %ld\n", startx, stopx);
+		pop(max_score);
+		count++;
+	}
+	return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -334,7 +369,7 @@ int main(int argc, char* argv[]) {
         fclose(in_file);
         fclose(out_file);
         return 1;
-    } 
+    }
     
     long int pair_size = 0;
     long int q_size = 0;
@@ -342,45 +377,47 @@ int main(int argc, char* argv[]) {
     
     if (header_parse(in_file, &pair_size, &q_size, &d_size) == 1){
         fclose(in_file);
+		fclose(out_file);
         return 1;
     }
+    
     int check = 0;
     int pairs = 0;
     while (pairs < pair_size){
         char *q = malloc(sizeof(char[q_size+1]));
         char *d = malloc(sizeof(char[d_size+1]));
         
-        check = parse_file(in_file, q, d);
+        check = parse_file(in_file, out_file, q, d);
         
+		fprintf(out_file, "\n");
+		
         if (check == 1){
             free(q);
             free(d);
-            free(max_score);
-            return 1;
-        } 
-        
-        if (create_score_matrix(match, mismatch, gap, q, d) == 1){
-            free(q);
-            free(d);
-            free(max_score);
+			fclose(in_file);
+			fclose(out_file);
             return 1;
         }
         
-        if (check == 2){
-            free(q);
-            free(d);
-            free(max_score);
-            break;
-        }
-        empty();
+        long unsigned int rows = strlen(q) + 1;
+		long unsigned int columns = strlen(d) + 1;
+		Node (*score_matrix)[columns] = malloc(sizeof(Node[rows][columns]));
+        MVP* max_score = NULL;
+		
+        create_score_matrix(rows, columns, score_matrix);
+		calculate_score(columns, score_matrix, match, mismatch, gap, q, d, &max_score);
+        traceback(&max_score, out_file, q, d);
+		
         free(q);
         free(d);
-        free(max_score);
+        empty(&max_score);
+		free(score_matrix);
+		if (check == 2) break;
         pairs++;
     } 
     
     fclose(in_file);
     fclose(out_file);
     
-    return 0;  
+    return 0;
 }
