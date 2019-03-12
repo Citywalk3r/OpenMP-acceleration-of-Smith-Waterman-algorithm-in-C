@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-
 //flags
 const char* name_flag = "-name";
 const char* input_flag = "-input";
@@ -26,7 +25,8 @@ const char* gap_flag = "-gap";
 const int line_size = 256;
 
 typedef struct Node{
-    long int value, posx, posy;
+	long int value;
+    unsigned long int posx, posy;
     struct Node *prev;
 	char direction;
 }Node;
@@ -159,7 +159,8 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
     return 0;
 }
 
-int header_parse(FILE* in_file, long int *pair_size, long int *q_size, long int *d_size){
+int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
+				unsigned long int *d_size){
     char* line = malloc(line_size*sizeof(char));
     
     if (fgets(line, line_size, in_file)) {
@@ -246,7 +247,7 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
             strcpy(d, line);
             flag = 0;
         } else if (strncmp(line, "\t", 1) == 0 || strncmp(line, "  ", 2) == 0) {
-			fprintf(out_file, "%s", line);
+			fprintf(out_file, "\t%s", line);
 			sscanf(line, "\t%[^\n]", line);
             if (flag == 1){
                 strcat(q, line);
@@ -262,16 +263,16 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
     return 0;
 }
 
-int create_score_matrix(long unsigned int rows, long unsigned int columns,\
+int create_score_matrix(unsigned long int rows, unsigned long int columns,\
 						Node (*score_matrix)[columns]){
-    for (int i = 0; i < rows; i++){
+    for (unsigned long int i = 0; i < rows; i++){
         score_matrix[i][0].value = 0;
 		score_matrix[i][0].posx = i;
 		score_matrix[i][0].posy = 0;
         score_matrix[i][0].prev = NULL;
 		score_matrix[i][0].direction = 'N';
     }
-    for (int i = 0; i < columns; i++){
+    for (unsigned long int i = 0; i < columns; i++){
         score_matrix[0][i].value = 0;
 		score_matrix[0][i].posx = 0;
 		score_matrix[0][i].posy = i;
@@ -281,14 +282,14 @@ int create_score_matrix(long unsigned int rows, long unsigned int columns,\
     return 0;
 }
 
-int calculate_score(long int c, Node (*score_matrix)[c], long int match, long int mismatch,\
+int calculate_score(unsigned long int c, Node (*score_matrix)[c], long int match, long int mismatch,\
                     long int gap, char* q, char* d, MVP* *max_score){
     
     long int diagonal, up, left;
     push(max_score, &score_matrix[0][0]);
     
-    for (int i = 1; i <= strlen(q); i++){
-        for (int j = 1; j <= strlen(d); j++){
+    for (unsigned long int i = 1; i <= strlen(q); i++){
+        for (unsigned long int j = 1; j <= strlen(d); j++){
             if (q[i-1] == d[j-1])
                 diagonal = score_matrix[i-1][j-1].value + match;
             else 
@@ -337,10 +338,10 @@ int calculate_score(long int c, Node (*score_matrix)[c], long int match, long in
 
 int traceback(MVP* *max_score, FILE* out_file, char* q, char* d){
 	int count = 1;
-	long int startx = 0;
-	long int stopx = 0;
-	long int starty = 0;
-	long int stopy = 0;
+	unsigned long int startx = 0;
+	unsigned long int stopx = 0;
+	unsigned long int starty = 0;
+	unsigned long int stopy = 0;
 	Node* search;
 	while(*max_score != NULL){
 		search = (*max_score)->cell;
@@ -385,8 +386,8 @@ int main(int argc, char* argv[]) {
     }
     
     long int pair_size = 0;
-    long int q_size = 0;
-    long int d_size = 0;
+    unsigned long int q_size = 0;
+    unsigned long int d_size = 0;
     
     if (header_parse(in_file, &pair_size, &q_size, &d_size) == 1){
         fclose(in_file);
@@ -395,40 +396,51 @@ int main(int argc, char* argv[]) {
     }
     
     int check = 0;
-    int pairs = 0;
-    while (pairs < pair_size){
-        char *q = malloc(sizeof(char[q_size+1]));
-        char *d = malloc(sizeof(char[d_size+1]));
-        
+    int pairs = 1;
+	unsigned long int rows, columns;
+	MVP* max_score = NULL;
+	Node (*score_matrix)[] = NULL;
+	
+    while (pairs <= pair_size){
+		printf("Pair %d\n", pairs);
+        char* q = malloc(sizeof(char[q_size+1]));
+		char* d = malloc(sizeof(char[d_size+1]));
+		
         check = parse_file(in_file, out_file, q, d);
         
 		fprintf(out_file, "\n");
 		
+		printf("Size of Node: %ld\n", sizeof(Node));
+		
         if (check == 1){
             free(q);
             free(d);
+			if (max_score){
+				empty(&max_score);
+			}
+			if (score_matrix){
+				free(score_matrix);
+			}
 			fclose(in_file);
 			fclose(out_file);
             return 1;
         }
         
-        long unsigned int rows = strlen(q) + 1;
-		long unsigned int columns = strlen(d) + 1;
+        rows = strlen(q) + 1;
+		columns = strlen(d) + 1;
 		Node (*score_matrix)[columns] = malloc(sizeof(Node[rows][columns]));
-        MVP* max_score = NULL;
 		
         create_score_matrix(rows, columns, score_matrix);
 		calculate_score(columns, score_matrix, match, mismatch, gap, q, d, &max_score);
         traceback(&max_score, out_file, q, d);
 		
-        free(q);
-        free(d);
+		free(q);
+		free(d);
         empty(&max_score);
 		free(score_matrix);
 		if (check == 2) break;
         pairs++;
     } 
-    
     fclose(in_file);
     fclose(out_file);
     
