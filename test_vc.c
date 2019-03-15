@@ -24,41 +24,35 @@ const char* mismatch_flag = "-mismatch";
 const char* gap_flag = "-gap";
 const int line_size = 256;
 
-typedef struct Node{
-	long int value;
-    unsigned long int posx, posy;
-    struct Node *prev;
-	char direction;
-}Node;
-
 typedef struct MVP{
-    Node *cell;
+    unsigned int q;
+	unsigned int d;
     struct MVP *next;
 }MVP;
 
-int push(MVP* *max_score, Node* cell){
+int push(MVP* *max_score, unsigned int q, unsigned int d){
     MVP* temp = (struct MVP*)malloc(sizeof(struct MVP));
     if (!temp){
         printf("ERROR: Overflowing Heap\n");
         return 1;
     }
-    temp->cell = cell;
+    temp->q = q;
+	temp->d = d;
     temp->next = *max_score;
     *max_score = temp;
     return 0;
 }
 
-Node* pop(MVP* *max_score){
+int pop(MVP* *max_score){
     if (*max_score == NULL) {
         printf("ERROR: Stack Underflow in POP\n");
-        return NULL;
+        return 1;
     }
 	MVP* temp = *max_score;
-	Node* result = temp->cell;
 	(*max_score) = (*max_score)->next;
 	free(temp);
 	
-    return result;
+    return 0;
 }
 
 int empty(MVP* *max_score){
@@ -87,19 +81,24 @@ char* concat(const char* s1, const char* s2, const char* s3, const char* s4) {
     }
 }
 
-int max(long int a, long int b, long int c){
+int max(int a, int b, int c, int* pos){
     if (a > b){
-        if (a > c)
+        if (a > c){
+			*pos = 0;
             return a;
+		}
     } else {
-        if (b > c)
+        if (b > c){
+			*pos = 1;
             return b;
+		}
     }
+    *pos = 2;
     return c;
 }
 
-int init_parsing(int count, char* *vector, char* *name, char* *input, long int *match,\
-                long int *mismatch, long int *gap){
+int init_parsing(int count, char* *vector, char* *name, char* *input, int *match,\
+                int *mismatch, int *gap){
     
     for(int i=1; i<count; i+=2) {
         if (strcmp(name_flag, vector[i]) == 0) {
@@ -107,17 +106,17 @@ int init_parsing(int count, char* *vector, char* *name, char* *input, long int *
         }else if(strcmp(input_flag, vector[i]) == 0) {
             *input = vector[i+1];
         }else if(strcmp(match_flag, vector[i]) == 0) {
-            if (sscanf(vector[i+1], "%ld", match) != 1){
+            if (sscanf(vector[i+1], "%d", match) != 1){
                 printf("ERROR: \"match\" NaN\n");
                 return 1;
             }
         }else if(strcmp(mismatch_flag, vector[i]) == 0) {
-            if (sscanf(vector[i+1], "%ld", mismatch) != 1){
+            if (sscanf(vector[i+1], "%d", mismatch) != 1){
                 printf("ERROR: \"mismatch\" NaN\n");
                 return 1;
             }
         }else if(strcmp(gap_flag, vector[i]) == 0) {
-            if (sscanf(vector[i+1], "%ld", gap) != 1){
+            if (sscanf(vector[i+1], "%d", gap) != 1){
                 printf("ERROR: \"gap\" NaN\n");
                 return 1;
             }
@@ -126,8 +125,8 @@ int init_parsing(int count, char* *vector, char* *name, char* *input, long int *
             return 1;
         }
     }
-    printf("Program: %s\nName: %s\nInput: %s\nMatch: %ld\nMismatch: %ld\n\
-Gap: %ld\n", vector[0], *name, *input, *match, *mismatch, *gap);
+    printf("Program: %s\nName: %s\nInput: %s\nMatch: %d\nMismatch: %d\n\
+Gap: %d\n", vector[0], *name, *input, *match, *mismatch, *gap);
     return 0;
 }
 
@@ -159,8 +158,8 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
     return 0;
 }
 
-int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
-				unsigned long int *d_size){
+int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
+				unsigned int *d_size){
     char* line = malloc(line_size*sizeof(char));
     
     if (fgets(line, line_size, in_file)) {
@@ -171,7 +170,7 @@ int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
             return 1;
         }
         *pair_size = atoi(line);
-        printf("The dataset contains %ld Q-D pairs\n", *pair_size);
+        printf("The dataset contains %d Q-D pairs\n", *pair_size);
     } else {
         printf("ERROR: Input file was empty\n");
         free(line);
@@ -190,7 +189,7 @@ int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
             return 1;
         }
         *q_size = atoi(line);
-        printf("Q size is %ld\n", *q_size);
+        printf("Q size is %d\n", *q_size);
     } else {
         printf("ERROR: Input file terminated early\n");
         free(line);
@@ -204,7 +203,7 @@ int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
             return 1;
         }
         *d_size = atoi(line);
-        printf("D size is %ld\n", *d_size);
+        printf("D size is %d\n", *d_size);
     } else {
         printf("ERROR: Input file terminated early\n");
         free(line);
@@ -216,7 +215,7 @@ int header_parse(FILE* in_file, long int *pair_size, unsigned long int *q_size,\
 }
 
 int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
-    long int cnt = 0;
+    int cnt = 0;
     int flag = 0;
     
     char* line = malloc(line_size*sizeof(char));
@@ -263,72 +262,45 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
     return 0;
 }
 
-int create_score_matrix(unsigned long int rows, unsigned long int columns,\
-						Node (*score_matrix)[columns]){
-    for (unsigned long int i = 0; i < rows; i++){
-        score_matrix[i][0].value = 0;
-		score_matrix[i][0].posx = i;
-		score_matrix[i][0].posy = 0;
-        score_matrix[i][0].prev = NULL;
-		score_matrix[i][0].direction = 'N';
-    }
-    for (unsigned long int i = 0; i < columns; i++){
-        score_matrix[0][i].value = 0;
-		score_matrix[0][i].posx = 0;
-		score_matrix[0][i].posy = i;
-        score_matrix[0][i].prev = NULL;
-		score_matrix[0][i].direction = 'N';
+int create_score_matrix(unsigned int rows, unsigned int columns,\
+						int (*score_matrix)[columns]){
+    for (unsigned int i = 0; i < rows; i++){
+        for (unsigned int j = 0; j < columns; j++){
+			score_matrix[i][j] = 0;
+		}
     }
     return 0;
 }
 
-int calculate_score(unsigned long int c, Node (*score_matrix)[c], long int match, long int mismatch,\
-                    long int gap, char* q, char* d, MVP* *max_score){
+int calculate_score(unsigned int rows, unsigned int columns, int (*score_matrix)[columns],\
+					int match, int mismatch,\
+                    int gap, char* q, char* d, MVP* *max_score){
     
-    long int diagonal, up, left;
-    push(max_score, &score_matrix[0][0]);
+    int diagonal, up, left;
+	int trash = 0;
+    push(max_score, 0, 0);
     
-    for (unsigned long int i = 1; i <= strlen(q); i++){
-        for (unsigned long int j = 1; j <= strlen(d); j++){
+    for (unsigned int i = 1; i <= strlen(q); i++){
+        for (unsigned int j = 1; j <= strlen(d); j++){
+			//q = i-1, d = j-1 cause score_matrix zero pads q and d for initialization
             if (q[i-1] == d[j-1])
-                diagonal = score_matrix[i-1][j-1].value + match;
+                diagonal = score_matrix[i-1][j-1] + match;
             else 
-                diagonal = score_matrix[i-1][j-1].value + mismatch;
-            up = score_matrix[i-1][j].value + gap;
-            left = score_matrix[i][j-1].value + gap;
-			score_matrix[i][j].posx = i-1;
-			score_matrix[i][j].posy = j-1;
-            score_matrix[i][j].value = max(diagonal, up, left);
-			if (score_matrix[i][j].value < 0){
-				score_matrix[i][j].value = 0;
-				score_matrix[i][j].prev = NULL;
-				score_matrix[i][j].direction = 'N';
-			} else {
-				//Ties go diag > left > up
-				if (score_matrix[i][j].value == diagonal){
-					if (score_matrix[i][j].value == score_matrix[i-1][j].value){
-						score_matrix[i][j].prev = &score_matrix[i-1][j];
-						score_matrix[i][j].direction = 'u';
-					} else if (score_matrix[i][j].value == score_matrix[i][j-1].value) {
-						score_matrix[i][j].prev = &score_matrix[i][j-1];
-						score_matrix[i][j].direction = 'l';
-					} else {
-						score_matrix[i][j].prev = &score_matrix[i-1][j-1];
-						score_matrix[i][j].direction = 'd';
-					}
-				} else if (score_matrix[i][j].value == left){
-					score_matrix[i][j].prev = &score_matrix[i][j-1];
-					score_matrix[i][j].direction = 'l';
-				} else {
-					score_matrix[i][j].prev = &score_matrix[i-1][j];
-					score_matrix[i][j].direction = 'u';
-				}
+                diagonal = score_matrix[i-1][j-1] + mismatch;
+            up = score_matrix[i-1][j] + gap;
+            left = score_matrix[i][j-1] + gap;
+			
+			score_matrix[i][j] = max(diagonal, up, left, &trash);
+			if (score_matrix[i][j] < 0){
+				score_matrix[i][j] = 0;
 			}
-            if ((*max_score)->cell->value < score_matrix[i][j].value){
+			//q = i-1, d = j-1 cause score_matrix zero pads q and d for initialization
+            if (score_matrix[((*max_score)->q)+1][((*max_score)->d)+1] < score_matrix[i][j]){
                 empty(max_score);
-                push(max_score, &score_matrix[i][j]);
-            } else if ((*max_score)->cell->value == score_matrix[i][j].value){
-                push(max_score, &score_matrix[i][j]);
+                push(max_score, i-1, j-1);
+            } else if ((score_matrix[((*max_score)->q)+1][((*max_score)->d)+1] == \
+						score_matrix[i][j]) && (score_matrix[i][j] != 0)){
+                push(max_score, i-1, j-1);
             } else {
             }
         }
@@ -336,30 +308,46 @@ int calculate_score(unsigned long int c, Node (*score_matrix)[c], long int match
     return 0;
 }
 
-int traceback(MVP* *max_score, FILE* out_file, char* q, char* d){
+int traceback(unsigned int rows, unsigned int columns, int (*score_matrix)[columns],\
+				MVP* *max_score, FILE* out_file, char* q, char* d){
 	int count = 1;
-	unsigned long int startx = 0;
-	unsigned long int stopx = 0;
-	unsigned long int starty = 0;
-	unsigned long int stopy = 0;
-	Node* search;
+	unsigned int startq, startd, stopq, stopd;
+	int max_val;
+	int pos;
+	if(*max_score != NULL){
+		max_val = score_matrix[((*max_score)->q)+1][(*max_score)->d+1];
+	}
 	while(*max_score != NULL){
-		search = (*max_score)->cell;
-		stopx = search->posx;
-		stopy = search->posy;
-		while(search->prev != NULL){
-			startx = search->posx;
-			starty = search->posy;
-			search = search->prev;
+		startq = ((*max_score)->q);
+		startd = (*max_score)->d;
+		stopq = startq;
+		stopd = startd;
+		//i = q+1, j = d+1 cause score_matrix zero pads q and d for initialization
+		while (score_matrix[startq+1][startd+1] > 0){
+			//max -> {diagonal,0}, {up,1}, {left,2}
+			//check q,d: [-1][-1], [-1][0], [0][-1] for traceback
+			//so we search score_matrix: [0][0], [0][+1], [+1][0]
+			max(score_matrix[startq][startd], score_matrix[startq][startd+1],\
+				score_matrix[startq+1][startd], &pos);
+			if (pos == 0){
+				if (score_matrix[startq][startd] == 0) break;
+				startq -= 1;
+				startd -= 1;
+			} else if (pos == 1){
+				if (score_matrix[startq][startd+1] == 0) break;
+				startq -= 1;
+			} else {
+				if (score_matrix[startq+1][startd] == 0) break;
+				startd -= 1;
+			}
 		}
-// 		char* tempx = malloc((stopx-startx+1))
-		
-		fprintf(out_file, "Match %d [Score: %ld, Start: %ld, Stop: %ld]\n",\
-				count, (*max_score)->cell->value, starty, stopy);
-		fprintf(out_file, "\t\tD:%.*s\n", (int)(stopy-starty+1), &d[starty]);
-		fprintf(out_file, "\t\tQ:%.*s\n", (int)(stopx-startx+1), &q[startx]);
-		fprintf(out_file, "\n");
 		pop(max_score);
+		
+		fprintf(out_file, "Match %d [Score: %d, Start: %d, Stop: %d]\n",\
+				count, max_val, startd, stopd);
+		fprintf(out_file, "\t\tD:%.*s\n", (int)(stopd-startd+1), &d[startd]);
+		fprintf(out_file, "\t\tQ:%.*s\n", (int)(stopq-startq+1), &q[startq]);
+		fprintf(out_file, "\n");
 		count++;
 	}
 	return 0;
@@ -370,9 +358,9 @@ int main(int argc, char* argv[]) {
     //variables
     char* name = "";
     char* input = "";
-    long int match = -1;
-    long int mismatch = -1;
-    long int gap = -1;
+    int match = -1;
+    int mismatch = -1;
+    int gap = -1;
     
     if (init_parsing(argc, argv, &name, &input, &match, &mismatch, &gap) == 1) return 1;
     
@@ -385,9 +373,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    long int pair_size = 0;
-    unsigned long int q_size = 0;
-    unsigned long int d_size = 0;
+    int pair_size = 0;
+    unsigned int q_size = 0;
+    unsigned int d_size = 0;
     
     if (header_parse(in_file, &pair_size, &q_size, &d_size) == 1){
         fclose(in_file);
@@ -397,9 +385,9 @@ int main(int argc, char* argv[]) {
     
     int check = 0;
     int pairs = 1;
-	unsigned long int rows, columns;
+	unsigned int rows, columns;
 	MVP* max_score = NULL;
-	Node (*score_matrix)[] = NULL;
+	int (*score_matrix)[] = NULL;
 	
     while (pairs <= pair_size){
 		printf("Pair %d\n", pairs);
@@ -409,8 +397,6 @@ int main(int argc, char* argv[]) {
         check = parse_file(in_file, out_file, q, d);
         
 		fprintf(out_file, "\n");
-		
-		printf("Size of Node: %ld\n", sizeof(Node));
 		
         if (check == 1){
             free(q);
@@ -428,16 +414,16 @@ int main(int argc, char* argv[]) {
         
         rows = strlen(q) + 1;
 		columns = strlen(d) + 1;
-		Node (*score_matrix)[columns] = malloc(sizeof(Node[rows][columns]));
 		
+		int (*score_matrix)[columns] = malloc(sizeof(int[rows][columns]));
         create_score_matrix(rows, columns, score_matrix);
-		calculate_score(columns, score_matrix, match, mismatch, gap, q, d, &max_score);
-        traceback(&max_score, out_file, q, d);
+		calculate_score(rows, columns, score_matrix, match, mismatch, gap, q, d, &max_score);
+        traceback(rows, columns, score_matrix, &max_score, out_file, q, d);
 		
 		free(q);
 		free(d);
-        empty(&max_score);
 		free(score_matrix);
+        empty(&max_score);
 		if (check == 2) break;
         pairs++;
     } 
