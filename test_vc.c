@@ -99,7 +99,9 @@ int max(int a, int b, int c, int* pos){
 
 int init_parsing(int count, char* *vector, char* *name, char* *input, int *match,\
                 int *mismatch, int *gap){
-    
+    printf( "\rParsing initial data        ");
+	fflush(stdout);
+	
     for(int i=1; i<count; i+=2) {
         if (strcmp(name_flag, vector[i]) == 0) {
             *name = vector[i+1];
@@ -131,6 +133,9 @@ Gap: %d\n", vector[0], *name, *input, *match, *mismatch, *gap);
 }
 
 int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
+	printf( "\rOpening Files 0%%          ");
+	fflush(stdout);
+	
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         printf("ERROR: getcwd() failed\n");
@@ -141,6 +146,9 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         printf("ERROR: Could not open input file \"%s.txt\"\n", input);
         return 1;
     } 
+    
+    printf( "\rOpening Files 50%%          ");
+	fflush(stdout);
     
     char* out_source = concat(cwd, "/Report_", name, ".txt");
     if (strcmp(out_source, "") == 0) {
@@ -154,13 +162,20 @@ int file_open(char* input, char* name, FILE* *in_file, FILE* *out_file){
         free(out_source);
         return 1;
     }
+    printf( "\rOpening Files 100%%         ");
+	fflush(stdout);
+	
     free(out_source);
     return 0;
 }
 
 int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
 				unsigned int *d_size){
-    char* line = malloc(line_size*sizeof(char));
+    printf( "\rParsing Header              ");
+	fflush(stdout);
+	printf("\n");
+	
+	char* line = malloc(line_size*sizeof(char));
     
     if (fgets(line, line_size, in_file)) {
         sscanf(line,"Pairs:\t%[^\n]", line);
@@ -215,9 +230,12 @@ int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
 }
 
 int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
-    int cnt = 0;
+	printf( "\rParsing File                ");
+	fflush(stdout);
+	
+	int cnt = 0;
     int flag = 0;
-    
+	
     char* line = malloc(line_size*sizeof(char));
     while (cnt < 2) {
         if (fgets(line, line_size, in_file) == NULL){
@@ -234,7 +252,6 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
             fprintf(out_file, "Q:\t\t%s\n", line);
 			strcpy(q, line);
             flag = 1;
-            cnt++;
         } else if (strncmp(line, "D:", 2) == 0) {
             if (flag == 0){
                 printf("ERROR: A \"Q\" entry is missing\n");
@@ -245,7 +262,7 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
 			fprintf(out_file, "D:\t\t%s\n", line);
             strcpy(d, line);
             flag = 0;
-        } else if (strncmp(line, "\t", 1) == 0 || strncmp(line, "  ", 2) == 0) {
+        } else if (strncmp(line, "\t", 1) == 0) {
 			fprintf(out_file, "\t%s", line);
 			sscanf(line, "\t%[^\n]", line);
             if (flag == 1){
@@ -253,9 +270,11 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
             } else {
                 strcat(d, line);
             }
-            
         } else {
-            //printf("ERROR: Invalid Input\n");
+            if (flag == 0){
+				cnt++;
+			}
+			//printf("ERROR: Invalid Input\n");
         }
     }
     free(line);
@@ -264,10 +283,12 @@ int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
 
 int create_score_matrix(unsigned int rows, unsigned int columns,\
 						int (*score_matrix)[columns]){
-    for (unsigned int i = 0; i < rows; i++){
+	for (unsigned int i = 0; i < rows; i++){
         for (unsigned int j = 0; j < columns; j++){
 			score_matrix[i][j] = 0;
 		}
+		printf( "\rCreating Score matrix: %d%% ", i*100/rows);
+		fflush(stdout);
     }
     return 0;
 }
@@ -278,10 +299,12 @@ int calculate_score(unsigned int rows, unsigned int columns, int (*score_matrix)
     
     int diagonal, up, left;
 	int trash = 0;
+	int q_limit = strlen(q);
+	int d_limit = strlen(d);
     push(max_score, 0, 0);
-    
-    for (unsigned int i = 1; i <= strlen(q); i++){
-        for (unsigned int j = 1; j <= strlen(d); j++){
+	
+    for (unsigned int i = 1; i <= q_limit; i++){
+        for (unsigned int j = 1; j <= d_limit; j++){
 			//q = i-1, d = j-1 cause score_matrix zero pads q and d for initialization
             if (q[i-1] == d[j-1])
                 diagonal = score_matrix[i-1][j-1] + match;
@@ -304,16 +327,22 @@ int calculate_score(unsigned int rows, unsigned int columns, int (*score_matrix)
             } else {
             }
         }
+        printf( "\rCalculating Score: %d%%     ", (int)i*100/q_limit);
+		fflush(stdout);
     }
     return 0;
 }
 
 int traceback(unsigned int rows, unsigned int columns, int (*score_matrix)[columns],\
 				MVP* *max_score, FILE* out_file, char* q, char* d){
+	printf( "\rBacktracing                 ");
+	fflush(stdout);
+	
 	int count = 1;
 	unsigned int startq, startd, stopq, stopd;
 	int max_val;
 	int pos;
+	
 	if(*max_score != NULL){
 		max_val = score_matrix[((*max_score)->q)+1][(*max_score)->d+1];
 	}
@@ -361,28 +390,22 @@ int main(int argc, char* argv[]) {
     int match = -1;
     int mismatch = -1;
     int gap = -1;
-    
     if (init_parsing(argc, argv, &name, &input, &match, &mismatch, &gap) == 1) return 1;
-    
     FILE* in_file;
     FILE* out_file;
-
     if (file_open(input, name, &in_file, &out_file) == 1){
         fclose(in_file);
         fclose(out_file);
         return 1;
     }
-    
     int pair_size = 0;
     unsigned int q_size = 0;
     unsigned int d_size = 0;
-    
     if (header_parse(in_file, &pair_size, &q_size, &d_size) == 1){
         fclose(in_file);
 		fclose(out_file);
         return 1;
     }
-    
     int check = 0;
     int pairs = 1;
 	unsigned int rows, columns;
@@ -390,12 +413,10 @@ int main(int argc, char* argv[]) {
 	int (*score_matrix)[] = NULL;
 	
     while (pairs <= pair_size){
-		printf("Pair %d\n", pairs);
+		printf("\nPair %d\n", pairs);
         char* q = malloc(sizeof(char[q_size+1]));
 		char* d = malloc(sizeof(char[d_size+1]));
-		
         check = parse_file(in_file, out_file, q, d);
-        
 		fprintf(out_file, "\n");
 		
         if (check == 1){
@@ -429,6 +450,8 @@ int main(int argc, char* argv[]) {
     } 
     fclose(in_file);
     fclose(out_file);
-    
+    printf( "\rFinished!                   ");
+	fflush(stdout);
+	printf("\n");
     return 0;
 }
