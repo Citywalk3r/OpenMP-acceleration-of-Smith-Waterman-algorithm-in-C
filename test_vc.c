@@ -151,13 +151,13 @@ char* concat(const char* s1, const char* s2, const char* s3, const char* s4) {
  * 	returns: max element
  */
 int max(int a, int b, int c, int* pos){
-    if (a > b){
-        if (a > c){
+    if (a >= b){
+        if (a >= c){
 			*pos = 0;
             return a;
 		}
     } else {
-        if (b > c){
+        if (b >= c){
 			*pos = 1;
             return b;
 		}
@@ -425,12 +425,13 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 	int trash = 0;
 	int q_limit = strlen(q);
 	int d_limit = strlen(d);
+	int prev = 0;
     push(max_score, 0, 0);
 	
     for (unsigned int i = 1; i <= q_limit; i++){
         for (unsigned int j = 1; j <= d_limit; j++){
 			/* 
-			 * q = i-1, d = j-1 cause score_matrix zero pads q and d
+			 * q = i-1, d = j-1, cause score_matrix zero pads q and d
 			 * for initialization 
 			 */
             if (q[i-1] == d[j-1])
@@ -440,16 +441,27 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
             up = score_matrix[i-1][j] + gap;
             left = score_matrix[i][j-1] + gap;
 			
+			/* priority in max: diagonal > up > left */
 			score_matrix[i][j] = max(diagonal, up, left, &trash);
+			
+			/* if value is less than zero, replace with zero */
 			if (score_matrix[i][j] < 0){
 				score_matrix[i][j] = 0;
 			}
-            if (score_matrix[((*max_score)->q)+1][((*max_score)->d)+1] < \
-				score_matrix[i][j]){
+			/* 
+			 * if new value is greater than the old max, empty the max stack
+			 * and replace the max value with new value
+			 */
+			prev = score_matrix[((*max_score)->q)+1][((*max_score)->d)+1]; 
+            if (prev < score_matrix[i][j]){
                 empty(max_score);
                 push(max_score, i-1, j-1);
-            } else if ((score_matrix[((*max_score)->q)+1][((*max_score)->d)+1]\
-						== score_matrix[i][j]) && (score_matrix[i][j] != 0)){
+			/* 
+			 * if value is equal to max value, push it to the stack as another
+			 * max value array. It doesn't count for max = value = 0.
+			 */
+            } else if ((prev == score_matrix[i][j]) &&\
+						(score_matrix[i][j] != 0)){
                 push(max_score, i-1, j-1);
             } else {
             }
@@ -474,7 +486,7 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
  * 	*steps: pointer to count number of traceback steps (call-by-reference)
  * 	*tb_time: pointer to count runtime (call-by-reference)
  * 
- * 	returns: 0 ok
+ * 	returns: 0 ok, 1 error
  */
 int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 				char* d, unsigned int *steps, double *tb_time){
@@ -482,9 +494,19 @@ int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 // 	fflush(stdout);
 	double start_time = gettime();
 	int count = 1;
-	unsigned int startq, startd, stopq, stopd;
+	unsigned int startq, startd, stopd;
 	int max_val;
-	int pos;
+	int pos = 0;
+	char q_temp;
+	char d_temp;
+	int q_jump = 0;
+	int d_jump = 0;
+	int i;
+	int j;
+	int m;
+	
+	char* q_print = (char *)malloc(sizeof(char));
+	char* d_print = (char *)malloc(sizeof(char));
 	
 	if(*max_score != NULL){
 		max_val = score_matrix[((*max_score)->q)+1][(*max_score)->d+1];
@@ -492,39 +514,84 @@ int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 	while(*max_score != NULL){
 		startq = ((*max_score)->q);
 		startd = (*max_score)->d;
-		stopq = startq;
 		stopd = startd;
-		/* 
-		 * i = q+1, j = d+1 cause score_matrix zero pads q and d for 
-		 * initialization 
-		 */
-		while (score_matrix[startq+1][startd+1] > 0){
-			/* max -> {diagonal,0}, {up,1}, {left,2}
-			 * check q,d: [-1][-1], [-1][0], [0][-1] for traceback
-			 * so we search score_matrix: [0][0], [0][+1], [+1][0] 
+		
+		q_print = (char *)realloc(q_print, sizeof(char));
+		d_print = (char *)realloc(d_print, sizeof(char));
+		strcpy(q_print, "\0");
+		strcpy(d_print, "\0");
+		do{
+			q_jump = strlen(q_print)+1;
+			q_print = (char *)realloc(q_print, sizeof(char)*(q_jump+1));
+			if (q_print == NULL){
+				printf("ERROR: Reallocating q failed\n");
+				return 1;
+			}
+			
+			d_jump = strlen(d_print)+1;
+			d_print = (char *)realloc(d_print, sizeof(char)*(d_jump+1));
+			if (d_print == NULL){
+				printf("ERROR: Reallocating d failed\n");
+				return 1;
+			}
+			
+			/* 
+			 * i = q+1, j = d+1 cause score_matrix zero pads q and d for 
+			 * initialization. Call-by-reference to auto update within
+			 * the loop.
 			 */
-			max(score_matrix[startq][startd], score_matrix[startq][startd+1],\
-				score_matrix[startq+1][startd], &pos);
+			i = (*(&startq)) + 1;
+			j = (*(&startd)) + 1;
+			/*
+			 * max -> diagonal, up, left
+			 * pos ->    0    ,  1,   2
+			 */
+			m = max(score_matrix[i-1][j-1],\
+					score_matrix[i-1][j],\
+					score_matrix[i][j-1], &pos);
+			
 			/* priority: diagonal > up > left */
 			if (pos == 0){
-				if (score_matrix[startq][startd] == 0) break;
+				q_temp = q[startq];
+				d_temp = d[startd];
 				startq -= 1;
 				startd -= 1;
 			} else if (pos == 1){
-				if (score_matrix[startq][startd+1] == 0) break;
+				q_temp = q[startq];
+				d_temp = '-';
 				startq -= 1;
 			} else {
-				if (score_matrix[startq+1][startd] == 0) break;
+				q_temp = '-';
+				d_temp = d[startd];
 				startd -= 1;
 			}
+			if (memmove(q_print+1, q_print, q_jump) == NULL){
+				free(q_print);
+				free(d_print);
+				printf("ERROR: memmove on q failed\n");
+				return 1;
+			}
+			q_print[0] = q_temp;
+			
+			if (memmove(d_print+1, d_print, d_jump) == NULL){
+				free(q_print);
+				free(d_print);
+				printf("ERROR: memmove on d failed\n");
+				return 1;
+			}
+			d_print[0] = d_temp;
+			
 			(*steps)++;
-		}
+			if (m == 0) break;
+		} while (score_matrix[i][j] > 0);
+		
 		pop(max_score);
 		fprintf(out_file, "Match %d [Score: %d, Start: %d, Stop: %d]\n",\
 				count, max_val, startd, stopd);
-//Note to self: check this out for print with dashes!!!
-// //         ptr = q[i];
-// //         ptr2 = d[i];
+		
+// last part for pretty prints!!!
+// //         ptr = q_print;
+// //         ptr2 = d_print;
 // //         
 // //         sz = fprintf(out_file, "Q:\t%.*s\n", line_len, ptr) - 4;
 // //         ptr += sz;        
@@ -538,13 +605,15 @@ int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 // //             sz = fprintf(out_file, "\t%.*s\n", line_len, ptr2) - 2;
 // //             ptr2 += sz;
 // //         }
-		fprintf(out_file, "\t\tD:%.*s\n", (int)(stopd-startd+1), &d[startd]);
-		fprintf(out_file, "\t\tQ:%.*s\n", (int)(stopq-startq+1), &q[startq]);
+		fprintf(out_file, "\t\tD:%s\n", d_print);
+		fprintf(out_file, "\t\tQ:%s\n", q_print);
 		fprintf(out_file, "\n");
 		count++;
 	}
 // 	printf("\rTraced Back %d steps, for %d value(s)\n", *steps, count-1);
 // 	fflush(stdout);
+	free(q_print);
+	free(d_print);
 	(*tb_time) += (gettime() - start_time);
 	return 0;
 }
@@ -627,14 +696,10 @@ int main(int argc, char* argv[]) {
         if (check == 1){
             free(q);
             free(d);
-			if (max_score){
-				empty(&max_score);
-			}
-			if (score_matrix){
-				for (int i = 0; i < q_size+1; i++)
-					free(score_matrix[i]);
-				free(score_matrix);
-			}
+			empty(&max_score);
+			for (int i = 0; i < q_size+1; i++)
+				free(score_matrix[i]);
+			free(score_matrix);
 			fclose(in_file);
 			free(out_source);
 			fclose(out_file);

@@ -10,7 +10,7 @@ else
 	read -p "Mismatch: " mm
 	read -p "Gap: " g
 fi
-gcc -Wall -o test -ggdb3 test_vc.c
+gcc -D_GNU_SOURCE -Wall -ggdb3 -o test test_vc.c
 valgrind --leak-check=full \
          --show-leak-kinds=all \
          --track-origins=yes \
