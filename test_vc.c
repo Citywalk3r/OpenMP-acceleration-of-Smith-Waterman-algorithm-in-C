@@ -13,15 +13,6 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <limits.h>
 #include <sys/time.h>
 
 const char* name_flag = "-name";
