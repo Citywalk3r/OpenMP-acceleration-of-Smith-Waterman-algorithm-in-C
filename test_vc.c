@@ -1,11 +1,10 @@
-/*
+ /*
  * Smith-Waterman serial program
  * -----------------------------
  * Authors: C.Theodoris, M. Pantelidakis
  * Date: 03/2019 
  * 
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,19 +36,6 @@ typedef struct MVP{
 	unsigned int d;
     struct MVP *next;
 }MVP;
-
-/*
- * Function: gettime
- * -----------------
- * 	A simple timestamp function, as given in the project description
- * 
- * 	returns: the exact time when it is called
- */
- double gettime(void) {
-	struct timeval ttime;
-	gettimeofday(&ttime, NULL);
-	return ttime.tv_sec+ttime.tv_usec * 0.000001;
-}
 
 /*
  * Function: push
@@ -113,6 +99,19 @@ int empty(MVP* *max_score){
 		pop(max_score);
 	}
     return 0;
+}
+
+/*
+ * Function: gettime
+ * -----------------
+ * 	A simple timestamp function, as given in the project description
+ * 
+ * 	returns: the exact time when it is called
+ */
+ double gettime(void) {
+	struct timeval ttime;
+	gettimeofday(&ttime, NULL);
+	return ttime.tv_sec+ttime.tv_usec * 0.000001;
 }
 
 /*
@@ -184,10 +183,6 @@ int max(int a, int b, int c, int* pos){
  */
 int init_parsing(int count, char* *vector, char* *name, char* *input,\
 				int *match, int *mismatch, int *gap){
-// 	printf("\n");
-//     printf( "\rParsing initial data        ");
-// 	fflush(stdout);
-	
     for(int i=1; i<count; i+=2) {
         if (strcmp(name_flag, vector[i]) == 0) {
             *name = vector[i+1];
@@ -213,8 +208,6 @@ int init_parsing(int count, char* *vector, char* *name, char* *input,\
             return 1;
         }
     }
-//     printf("\nProgram: %s\nName: %s\nInput: %s\nMatch: %d\nMismatch: %d\n
-// Gap: %d\n\n", vector[0], *name, *input, *match, *mismatch, *gap);
     return 0;
 }
 
@@ -234,9 +227,6 @@ int init_parsing(int count, char* *vector, char* *name, char* *input,\
  */
 int file_open(char* input, FILE* *in_file, FILE* *out_file,\
 				char* out_source){
-// 	printf( "\rOpening Files              ");
-// 	fflush(stdout);
-    
     if ((*in_file = fopen(input, "r")) == NULL) { 
         printf("ERROR: Could not open input file \"%s.txt\"\n", input);
         return 1;
@@ -273,9 +263,6 @@ int file_open(char* input, FILE* *in_file, FILE* *out_file,\
  */
 int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
 				unsigned int *d_size){
-//     printf( "\rParsing Header              ");
-// 	fflush(stdout);
-	
 	char* line = malloc(line_size*sizeof(char));
     
     if (fgets(line, line_size, in_file)) {
@@ -307,7 +294,6 @@ Q_Sz_Max number!\n");
             return 1;
         }
         *q_size = atoi(line);
-//         printf("Q size is %d\n", *q_size);
     } else {
         printf("ERROR: Input file terminated early\n");
         free(line);
@@ -322,7 +308,6 @@ D_Sz_All number!\n");
             return 1;
         }
         *d_size = atoi(line);
-//         printf("D size is %d\n", *d_size);
     } else {
         printf("ERROR: Input file terminated early\n");
         free(line);
@@ -350,8 +335,6 @@ D_Sz_All number!\n");
  * 	returns: 0 ok, 1 error, 2 parsing is finished
  */
 int parse_file(FILE* in_file, FILE* out_file, char* q, char* d){
-// 	printf( "\rParsing File                ");
-// 	fflush(stdout);
 	
 	int cnt = 0;
 	/* 2 for init, to dodge the first empty line in the dataset */
@@ -466,12 +449,38 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
             } else {
             }
         }
-//         printf( "\rCalculating Score: %d%%     ", (int)i*100/q_limit);
-// 		fflush(stdout);
     }
     (*calc_time) += (gettime() - start_time);
     return 0;
 }
+
+/*
+ * Function: pretty_print
+ * -------------------
+ * 	This function takes the results of traceback and word wraps them
+ * 	to line_len size lines while printing them to output file
+ * 
+ * 	out_file: the output file to print the results
+ * 	q,d: back traced q and d strings
+ */
+void pretty_print(FILE* out_file, char* q, char* d, int line_len){
+	int print_size;
+	
+	print_size = fprintf(out_file, "\tQ:\t%.*s\n", line_len, q) - 5;
+	q += print_size;        
+	while(print_size >= line_len){
+		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, q) - 3;
+		q += print_size;
+	}
+	print_size = fprintf(out_file, "\tD:\t%.*s\n", line_len, d) - 5;
+	d += print_size;        
+	while(print_size >= line_len){
+		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, d) - 3;
+		d += print_size;
+	}
+	fprintf(out_file, "\n");
+}
+
 
 /*
  * Function: traceback
@@ -490,20 +499,13 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
  */
 int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 				char* d, unsigned int *steps, double *tb_time){
-// 	printf( "\rBacktracing                 ");
-// 	fflush(stdout);
 	double start_time = gettime();
-	int count = 1;
 	unsigned int startq, startd, stopd;
-	int max_val;
-	int pos = 0;
-	char q_temp;
-	char d_temp;
+	int i, j, m, pos, max_val;
+	char q_temp, d_temp;
+	int count = 1;
 	int q_jump = 0;
 	int d_jump = 0;
-	int i;
-	int j;
-	int m;
 	
 	char* q_print = (char *)malloc(sizeof(char));
 	char* d_print = (char *)malloc(sizeof(char));
@@ -583,35 +585,15 @@ int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 			
 			(*steps)++;
 			if (m == 0) break;
-		} while (score_matrix[i][j] > 0);
+		} while (1);
 		
 		pop(max_score);
 		fprintf(out_file, "Match %d [Score: %d, Start: %d, Stop: %d]\n",\
 				count, max_val, startd, stopd);
+		pretty_print(out_file, q_print, d_print, 100);
 		
-// last part for pretty prints!!!
-// //         ptr = q_print;
-// //         ptr2 = d_print;
-// //         
-// //         sz = fprintf(out_file, "Q:\t%.*s\n", line_len, ptr) - 4;
-// //         ptr += sz;        
-// //         while(sz >= line_len){
-// //             sz = fprintf(out_file, "\t%.*s\n", line_len, ptr) - 2;
-// //             ptr += sz;
-// //         }
-// //         sz = fprintf(out_file, "D:\t%.*s\n", line_len, ptr2) - 4;
-// //         ptr2 += sz;        
-// //         while(sz >= line_len){
-// //             sz = fprintf(out_file, "\t%.*s\n", line_len, ptr2) - 2;
-// //             ptr2 += sz;
-// //         }
-		fprintf(out_file, "\t\tD:%s\n", d_print);
-		fprintf(out_file, "\t\tQ:%s\n", q_print);
-		fprintf(out_file, "\n");
 		count++;
 	}
-// 	printf("\rTraced Back %d steps, for %d value(s)\n", *steps, count-1);
-// 	fflush(stdout);
 	free(q_print);
 	free(d_print);
 	(*tb_time) += (gettime() - start_time);
@@ -682,10 +664,7 @@ int main(int argc, char* argv[]) {
 	char* q = malloc(sizeof(char[q_size+1]));
 	char* d = malloc(sizeof(char[d_size+1]));
 	
-//     printf("\nStarting the Smith Waterman algorithm...\n");
 	while (pairs <= pair_size){
-		
-// 		printf("\nPair %d\n", pairs);
 		
         check = parse_file(in_file, out_file, q, d);
 		fprintf(out_file, "\n");
@@ -694,15 +673,15 @@ int main(int argc, char* argv[]) {
 		 * check to ensure that we have not encountered an error in the dataset
 		 */
         if (check == 1){
-            free(q);
-            free(d);
-			empty(&max_score);
 			for (int i = 0; i < q_size+1; i++)
 				free(score_matrix[i]);
 			free(score_matrix);
 			fclose(in_file);
-			free(out_source);
 			fclose(out_file);
+            free(q);
+            free(d);
+			free(out_source);
+			empty(&max_score);
             return 1;
         }
         
@@ -717,28 +696,30 @@ int main(int argc, char* argv[]) {
 		cell_count += rows*columns;
 		calculate_score(score_matrix, match, mismatch, gap, q,\
 						d, &max_score, &calc_time);
-        traceback(score_matrix, &max_score, out_file, q, d, &tb_steps,\
-						&tb_time);
+        if(traceback(score_matrix, &max_score, out_file, q, d, &tb_steps,\
+						&tb_time) == 1){
+			for (int i = 0; i < q_size+1; i++)
+				free(score_matrix[i]);
+			free(score_matrix);
+			fclose(in_file);
+			fclose(out_file);
+			free(q);
+			free(d);
+			free(out_source);
+			empty(&max_score);
+			return 1;
+		}
 		
 		/*
 		 * emptying the max-values-list, checking if we finished the dataset 
 		 * and/or moving to the next pair
 		 */
         empty(&max_score);
-		fflush(stdout);
 		if (check == 2) break;
         pairs++;
     }
-    
-    /* after finishing, we free all the memory and close the program */
-	for (int i = 0; i < q_size+1; i++)
-		free(score_matrix[i]);
-	free(score_matrix);
-    fclose(in_file);
-    fclose(out_file);
 	
 	double end_time = gettime()-start_time;
-//     printf("\nCompleted the Smith Waterman algorithm!\n");
 	printf("Total cells utilized: %u\n", cell_count);
 	printf("Total traceback steps: %u\n", tb_steps);
 	printf("Elapsed time: %.3f s\n", end_time);
@@ -748,7 +729,11 @@ int main(int argc, char* argv[]) {
 			((strlen(q))*(strlen(d)))/end_time);
 	printf("Cell Updates Per Second of matrix calculation runtime: %.3f\n",\
 			((strlen(q))*(strlen(d)))/calc_time);
-// 	printf("Output is saved in directory \"%s\"\n\n", out_source);
+	for (int i = 0; i < q_size+1; i++)
+		free(score_matrix[i]);
+	free(score_matrix);
+    fclose(in_file);
+    fclose(out_file);
 	free(q);
 	free(d);
 	free(out_source);
