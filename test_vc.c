@@ -466,17 +466,17 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 void pretty_print(FILE* out_file, char* q, char* d, int line_len){
 	int print_size;
 	
-	print_size = fprintf(out_file, "\tQ:\t%.*s\n", line_len, q) - 5;
-	q += print_size;        
-	while(print_size >= line_len){
-		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, q) - 3;
-		q += print_size;
-	}
 	print_size = fprintf(out_file, "\tD:\t%.*s\n", line_len, d) - 5;
 	d += print_size;        
 	while(print_size >= line_len){
 		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, d) - 3;
 		d += print_size;
+	}
+	print_size = fprintf(out_file, "\tQ:\t%.*s\n", line_len, q) - 5;
+	q += print_size;        
+	while(print_size >= line_len){
+		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, q) - 3;
+		q += print_size;
 	}
 	fprintf(out_file, "\n");
 }
