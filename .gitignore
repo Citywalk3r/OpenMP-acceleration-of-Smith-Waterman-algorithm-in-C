@@ -1,6 +1,6 @@
 Datasets/
 .directory
-test
+serial
 Report_*
 labdesc*
 valgrind*
