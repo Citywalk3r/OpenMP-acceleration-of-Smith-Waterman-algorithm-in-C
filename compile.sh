@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ "$1" == "-d" ]; then
+if [ "$1" = "-d" ]; then
 	sc="dynamic, 1"
 	shift
 else
@@ -9,7 +9,7 @@ else
 	echo "2) Parallel (OpenMP)"
 	read -p "Selection: " imp
 
-	if [ "${imp}" == "2" ]; then
+	if [ "${imp}" = "2" ]; then
 		echo "Which method of Parallelization would you like to compile?"
 		echo "1) Static: Each thread is assigned a chunk of tasks to work \
 [default]"
@@ -18,9 +18,9 @@ else
 on processes left"
 		read -p "Selection: " sel
 
-		if [ "${sel}" == "2" ]; then
+		if [ "${sel}" = "2" ]; then
 			sc="dynamic, 1"
-		elif [ "${sel}" == "3" ]; then
+		elif [ "${sel}" = "3" ]; then
 			sc="guided, 1"
 		else
 			sc="static, (int)(q_limit+d_limit)/(2*threads)"
@@ -28,7 +28,7 @@ on processes left"
 	fi
 fi
 
-if [ "${imp}" == "2" ]; then
+if [ "${imp}" = "2" ]; then
 	gcc -D_GNU_SOURCE -Dsched="${sc}" -fopenmp -Wall -ggdb3 \
  generic.c OMP_functions.c Smith-Waterman_omp.c -o omp
 else
