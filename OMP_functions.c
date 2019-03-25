@@ -87,7 +87,7 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 		for(antidiag = 1; antidiag < (q_limit+d_limit); antidiag++){
 			limSW = antidiag < q_limit ? antidiag : q_limit;
 			limNE = antidiag < d_limit ? 0 : antidiag-d_limit;
-			#pragma omp for private(k, i, j) schedule(sched)
+			#pragma omp for private(k, i, j, diagonal, up, left) schedule(sched)
 			for (k = limSW; k > limNE; k--) {
 				i = k;
 				j = (antidiag-k)+1;
