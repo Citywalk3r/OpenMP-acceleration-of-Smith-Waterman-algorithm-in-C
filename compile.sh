@@ -31,7 +31,9 @@ fi
 if [ "${imp}" = "2" ]; then
 	gcc -D_GNU_SOURCE -Dsched="${sc}" -fopenmp -Wall -ggdb3 \
  generic.c OMP_functions.c Smith-Waterman_omp.c -o omp
+	exit 2
 else
 	gcc -D_GNU_SOURCE -Wall -ggdb3 \
  generic.c SERIAL_functions.c Smith-Waterman_serial.c -o serial
+	exit 1
 fi
