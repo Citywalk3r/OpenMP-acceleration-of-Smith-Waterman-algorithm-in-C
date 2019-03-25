@@ -1,6 +1,7 @@
 Datasets/
 .directory
 serial
+omp
 Report_*
 labdesc*
 valgrind*
