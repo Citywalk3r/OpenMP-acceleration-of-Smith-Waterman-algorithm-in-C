@@ -1,5 +1,8 @@
 Datasets/
 .directory
-test
+serial
+omp
 Report_*
 labdesc*
+valgrind*
+README*
