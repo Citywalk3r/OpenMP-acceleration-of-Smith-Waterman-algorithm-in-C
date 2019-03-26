@@ -22,6 +22,20 @@ else
 	echo
 fi
 
+if [ "${imp}" = "1" ]; then
+	echo "Which Serial variant would you like to compile?"
+	echo "1) Antidiagonal loop approach [default]"
+	echo "2) Serial traversal approach"
+	read -p "Selection: " sel
+	echo
+
+	if [ "${sel}" = "2" ]; then
+		lib=""${LD_SRC}"/SERIAL_functions.c"
+	else
+		lib=""${LD_SRC}"/SERIAL_ANTIDIAG_functions.c"
+	fi
+fi
+
 if [ "${imp}" = "2" ]; then
 	echo "Which method of Parallelization would you like to compile?"
 	echo "1) Static: Each thread is assigned a chunk of tasks to work \
@@ -49,7 +63,7 @@ if [ "${imp}" = "2" ]; then
 	exit 2
 else
 	gcc -D_GNU_SOURCE -Wall -ggdb3 -I"${LD_INC}" \
-		"${LD_SRC}"/generic.c "${LD_SRC}"/SERIAL_functions.c \
+		"${LD_SRC}"/generic.c "${lib}" \
 		Smith-Waterman_serial.c -o serial
 	exit 1
 fi

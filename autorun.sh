@@ -40,6 +40,7 @@ if [ "${sel}" = "5" ];then
 	if [ -f rep ]; then
 		rm Report_*
 	fi
+	rm rep
 	echo "Cleared all generated files"
 elif [ "${sel}" = "4" ];then
 	sh perf.sh
