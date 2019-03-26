@@ -147,22 +147,4 @@ extern int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
  */
 extern int parse_file(FILE* in_file, FILE* out_file, char* q, char* d);
 
-/*
- * Function: traceback
- * -------------------
- * 	This function takes the filled score matrix and the MVP stack and traces 
- * 	back all the max values to their root. It then prints out to the out-file
- * 
- * 	score_matrix: 2d array for q,d alignment
- * 	*max_score: pointer to use the max_score stack
- * 	out_file: the output file to print the results
- * 	q,d: q and d strings
- * 	*steps: pointer to count number of traceback steps (call-by-reference)
- * 	*tb_time: pointer to count runtime (call-by-reference)
- * 
- * 	returns: 0 ok, 1 error
- */
-int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
-				char* d, unsigned int *steps, double *tb_time);
-
 #endif
