@@ -68,6 +68,7 @@ extern int calculate_score(int** score_matrix, int match, int mismatch, int gap,
 extern int calculate_score_omp(int** score_matrix, int match, int mismatch, int gap,\
 					int threads, char* q, char* d, MVP* *max_score,\
 					double *calc_time);
+
 /*
  * Function: traceback
  * -------------------
@@ -83,7 +84,6 @@ extern int calculate_score_omp(int** score_matrix, int match, int mismatch, int 
  * 
  * 	returns: 0 ok, 1 error
  */
-extern int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
+int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
 				char* d, unsigned int *steps, double *tb_time);
-
 #endif

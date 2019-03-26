@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Run script for the Smith Waterman project.
+# Performance analysis script for the Smith Waterman project.
 # 
 # "--serial" flag: 	runs serial algorithm
 # "--omp" flag: 	runs parallel algorithm
@@ -41,12 +41,8 @@ read -p "Gap: " g
 
 if [ "${sel}" = "2" ]; then
 read -p "Threads: " t
-# 	valgrind --leak-check=full \
-# 			--show-leak-kinds=all \
-# 			--track-origins=yes \
-# 			--verbose \
-# 			--log-file=valgrind-out.txt \
-	./omp -name "${n}" -input $PWD/Datasets/"${d}".txt -match "${m}" \
+perf stat -e cache-references,cache-misses \
+./omp -name "${n}" -input $PWD/Datasets/"${d}".txt -match "${m}" \
 -mismatch "${mm}" -gap "${g}" -threads "${t}"
 else
 # 	valgrind --leak-check=full \
@@ -54,6 +50,7 @@ else
 # 			--track-origins=yes \
 # 			--verbose \
 # 			--log-file=valgrind-out.txt \
-	./serial -name "${n}" -input $PWD/Datasets/"${d}".txt -match "${m}" \
+perf stat -e cache-references,cache-misses \
+./serial -name "${n}" -input $PWD/Datasets/"${d}".txt -match "${m}" \
 -mismatch "${mm}" -gap "${g}"
 fi

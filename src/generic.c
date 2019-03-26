@@ -69,16 +69,16 @@ int max(int a, int b, int c, int* pos){
 void pretty_print(FILE* out_file, char* q, char* d, int line_len){
 	int print_size;
 	
-	print_size = fprintf(out_file, "\tD:\t%.*s\n", line_len, d) - 5;
+	print_size = fprintf(out_file, "\t\tD:\t%.*s\n", line_len, d) - 6;
 	d += print_size;        
 	while(print_size >= line_len){
-		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, d) - 3;
+		print_size = fprintf(out_file, "\t\t\t%.*s\n", line_len, d) - 4;
 		d += print_size;
 	}
-	print_size = fprintf(out_file, "\tQ:\t%.*s\n", line_len, q) - 5;
+	print_size = fprintf(out_file, "\t\tQ:\t%.*s\n", line_len, q) - 6;
 	q += print_size;        
 	while(print_size >= line_len){
-		print_size = fprintf(out_file, "\t\t%.*s\n", line_len, q) - 3;
+		print_size = fprintf(out_file, "\t\t\t%.*s\n", line_len, q) - 4;
 		q += print_size;
 	}
 	fprintf(out_file, "\n");

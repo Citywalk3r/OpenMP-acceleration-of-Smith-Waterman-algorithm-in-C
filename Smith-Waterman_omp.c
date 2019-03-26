@@ -1,4 +1,4 @@
- /*
+/*
  * Smith-Waterman serial program
  * -----------------------------
  * Authors: C.Theodoris, M. Pantelidakis
