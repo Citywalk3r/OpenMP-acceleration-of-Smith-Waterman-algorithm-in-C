@@ -63,10 +63,8 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 			 * q = i-1, d = j-1, cause score_matrix zero pads q and d
 			 * for initialization 
 			 */
-            if (q[i-1] == d[j-1])
-                diagonal = score_matrix[i-1][j-1] + match;
-            else 
-                diagonal = score_matrix[i-1][j-1] + mismatch;
+            diagonal = q[i-1] == d[j-1] ? (score_matrix[i-1][j-1] + match) \
+											: score_matrix[i-1][j-1] + mismatch;
             up = score_matrix[i-1][j] + gap;
             left = score_matrix[i][j-1] + gap;
 			
@@ -97,4 +95,107 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
     }
     (*calc_time) += (gettime() - start_time);
     return 0;
+}
+
+int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, char* q,\
+				char* d, unsigned int *steps, double *tb_time){
+	double start_time = gettime();
+	unsigned int startq, startd, stopd;
+	int i, j, m, pos, max_val;
+	char q_temp, d_temp;
+	int count = 1;
+	int q_jump = 0;
+	int d_jump = 0;
+	
+	char* q_print = (char *)malloc(sizeof(char));
+	char* d_print = (char *)malloc(sizeof(char));
+	
+	if(*max_score != NULL){
+		max_val = (*max_score)->value;
+	}
+	while(*max_score != NULL){
+		startq = ((*max_score)->q);
+		startd = (*max_score)->d;
+		stopd = startd;
+		
+		q_print = (char *)realloc(q_print, sizeof(char));
+		d_print = (char *)realloc(d_print, sizeof(char));
+		strcpy(q_print, "\0");
+		strcpy(d_print, "\0");
+		do{
+			q_jump = strlen(q_print)+1;
+			q_print = (char *)realloc(q_print, sizeof(char)*(q_jump+1));
+			if (q_print == NULL){
+				printf("ERROR: Reallocating q failed\n");
+				return 1;
+			}
+			
+			d_jump = strlen(d_print)+1;
+			d_print = (char *)realloc(d_print, sizeof(char)*(d_jump+1));
+			if (d_print == NULL){
+				printf("ERROR: Reallocating d failed\n");
+				return 1;
+			}
+			
+			/* 
+			 * i = q+1, j = d+1 cause score_matrix zero pads q and d for 
+			 * initialization. Call-by-reference to auto update within
+			 * the loop.
+			 */
+			i = (*(&startq)) + 1;
+			j = (*(&startd)) + 1;
+			/*
+			 * max -> diagonal, up, left
+			 * pos ->    0    ,  1,   2
+			 */
+			m = max(score_matrix[i-1][j-1],\
+					score_matrix[i-1][j],\
+					score_matrix[i][j-1], &pos);
+			
+			/* priority: diagonal > up > left */
+			if (pos == 0){
+				q_temp = q[startq];
+				d_temp = d[startd];
+				startq -= 1;
+				startd -= 1;
+			} else if (pos == 1){
+				q_temp = q[startq];
+				d_temp = '-';
+				startq -= 1;
+			} else {
+				q_temp = '-';
+				d_temp = d[startd];
+				startd -= 1;
+			}
+			if (memmove(q_print+1, q_print, q_jump) == NULL){
+				free(q_print);
+				free(d_print);
+				printf("ERROR: memmove on q failed\n");
+				return 1;
+			}
+			q_print[0] = q_temp;
+			
+			if (memmove(d_print+1, d_print, d_jump) == NULL){
+				free(q_print);
+				free(d_print);
+				printf("ERROR: memmove on d failed\n");
+				return 1;
+			}
+			d_print[0] = d_temp;
+			
+			(*steps)++;
+			if (m == 0) break;
+		} while (1);
+		
+		pop(max_score);
+		fprintf(out_file, "Match %d [Score: %d, Start: %d, Stop: %d]\n",\
+				count, max_val, startd, stopd);
+		pretty_print(out_file, q_print, d_print, 100);
+		
+		count++;
+	}
+	free(q_print);
+	free(d_print);
+	(*tb_time) += (gettime() - start_time);
+	return 0;
 }
