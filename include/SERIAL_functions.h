@@ -50,25 +50,6 @@ extern int init_parsing(int count, char* *vector, char* *name, char* *input,\
 extern int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 					char* q, char* d, MVP* *max_score, double *calc_time);
 
-
-/*
- * Function: calculate_score_omp
- * -----------------------------
- * 	Parallel implementation of the above function using OpenMP
- * 
- * 	score_matrix: 2d array for q,d alignment
- * 	match, mismatch, gap: parameters of the algorithm
- *  threads: number of threads for openmp
- * 	q,d: q and d strings
- * 	*max_score: pointer to fill the max_score stack (call-by-reference)
- * 	*calc_time: pointer to count runtime (call-by-reference)
- * 
- * 	returns: 0 ok
- */
-extern int calculate_score_omp(int** score_matrix, int match, int mismatch, int gap,\
-					int threads, char* q, char* d, MVP* *max_score,\
-					double *calc_time);
-
 /*
  * Function: traceback
  * -------------------
