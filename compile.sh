@@ -3,67 +3,47 @@
 #
 # Compiling script for the Smith Waterman project
 #
-# "--serial" flag: 	compile the serial code directly without prompt
-# "--omp" flag: 	proceed to parallel code compilation without initial prompt
-#
 
 LD_SRC="src/"
 LD_INC="include/"
 
-if [ "${1}" = "--serial" ]; then
-	imp=1
-elif [ "${1}" = "--omp" ]; then
-	imp=2
-else
-	echo "Which implementation would you like to compile?"
-	echo "1) Serial [default]"
-	echo "2) Parallel (OpenMP)"
-	read -p "Selection: " imp
-	echo
-fi
+lib1=""${LD_SRC}"/SERIAL_functions.c"
+lib2=""${LD_SRC}"/SERIAL_ANTIDIAG_functions.c"
 
-if [ "${imp}" = "1" ]; then
-	echo "Which Serial variant would you like to compile?"
-	echo "1) Antidiagonal loop approach [default]"
-	echo "2) Serial traversal approach"
-	read -p "Selection: " sel
-	echo
+sc1="static, (int)(q_limit+d_limit)/(2*threads)"
+sc2="dynamic, 1"
+sc3="guided, 1"
 
-	if [ "${sel}" = "2" ]; then
-		lib=""${LD_SRC}"/SERIAL_functions.c"
-	else
-		lib=""${LD_SRC}"/SERIAL_ANTIDIAG_functions.c"
-	fi
-fi
+#
+# Compilation of 2 serial variations.
+#
+# linear traverses the matrix line by line, element by element
+# antidiag traverses the matrix on the antidiagonal (same logic as our 
+#  parallel implementations, for comparison)
+#
+gcc -D_GNU_SOURCE -Wall -ggdb3 -I"${LD_INC}" \
+	"${LD_SRC}"/generic.c "${lib1}" \
+	Smith-Waterman.c -o serial_linear
+gcc -D_GNU_SOURCE -Wall -ggdb3 -I"${LD_INC}" \
+	"${LD_SRC}"/generic.c "${lib2}" \
+	Smith-Waterman.c -o serial_antidiag
 
-if [ "${imp}" = "2" ]; then
-	echo "Which method of Parallelization would you like to compile?"
-	echo "1) Static: Each thread is assigned a chunk of tasks to work \
-[default]"
-	echo "2) Dynamic: Each thread is assigned a single task to work"
-	echo "3) Guided: Starts as static and reduces size to dynamic based \
-on processes left"
-	read -p "Selection: " sel
-	echo
-
-	if [ "${sel}" = "2" ]; then
-		sc="dynamic, 1"
-	elif [ "${sel}" = "3" ]; then
-		sc="guided, 1"
-	else
-		sc="static, (int)(q_limit+d_limit)/(2*threads)"
-	fi
-fi
-
-if [ "${imp}" = "2" ]; then
-	gcc -D_GNU_SOURCE -Dsched="${sc}" -I"${LD_INC}" \
-		-fopenmp -Wall -ggdb3 \
-		"${LD_SRC}"/generic.c "${LD_SRC}"/OMP_functions.c \
-		Smith-Waterman_omp.c -o omp
-	exit 2
-else
-	gcc -D_GNU_SOURCE -Wall -ggdb3 -I"${LD_INC}" \
-		"${LD_SRC}"/generic.c "${lib}" \
-		Smith-Waterman_serial.c -o serial
-	exit 1
-fi
+#
+# Compilation of 3 fine grain variations (differ on schedule)
+#
+# static assigns big chunks of tasks to each thread
+# dynamic assigns a one-task-at-a-time to each thread 
+# guided starts as static and finishes as dynamic, based on tasks left
+#
+gcc -D_GNU_SOURCE -Dsched="${sc1}" -I"${LD_INC}" \
+	-fopenmp -Wall -ggdb3 \
+	"${LD_SRC}"/generic.c "${LD_SRC}"/OMP_functions.c \
+	Smith-Waterman.c -o omp_fine_static
+gcc -D_GNU_SOURCE -Dsched="${sc2}" -I"${LD_INC}" \
+	-fopenmp -Wall -ggdb3 \
+	"${LD_SRC}"/generic.c "${LD_SRC}"/OMP_functions.c \
+	Smith-Waterman.c -o omp_fine_dynamic
+gcc -D_GNU_SOURCE -Dsched="${sc3}" -I"${LD_INC}" \
+	-fopenmp -Wall -ggdb3 \
+	"${LD_SRC}"/generic.c "${LD_SRC}"/OMP_functions.c \
+	Smith-Waterman.c -o omp_fine_guided

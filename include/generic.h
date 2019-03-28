@@ -1,3 +1,7 @@
+/*
+ * Functions and globals used by all implementations 
+ */
+
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
@@ -25,6 +29,18 @@ typedef struct MVP{
 	int value;
     struct MVP *next;
 }MVP;
+
+/*
+ * Function: concat
+ * ----------------
+ * 	Concatenation function, used to create the output file path
+ * 
+ * 	s1-4: strings to concat
+ * 
+ * 	returns: concatenated string, or empty string
+ */
+extern char* concat(const char* s1, const char* s2, const char* s3, \
+					const char* s4);
 
  /*
  * Function: push
@@ -95,6 +111,26 @@ extern int max(int a, int b, int c, int* pos);
 extern void pretty_print(FILE* out_file, char* q, char* d, int line_len);
  
 /*
+ * Function: init_parsing
+ * ----------------------
+ * 	This function is scanning the args of the program when it's called.
+ * 	Implements a simple error handling for wrong/unknown inputs and formats
+ * 
+ * 	count: argc
+ * 	*vector: argv
+ *  *name: pointer to fill output name (call-by-reference)
+ * 	*input: pointer to fill input file path (call-by-reference)
+ * 	*match: pointer to fill match (call-by-reference)
+ * 	*mismatch: pointer to fill mismatch (call-by-reference)
+ *  *gap: pointer to fill gap (call-by-reference)
+ *  *threads: pointer to fill threads (if needed) (call-by-reference)
+ * 
+ * 	returns: 0 ok, 1 error
+ */
+int init_parsing(int count, char* *vector, char* *name, char* *input,\
+				int *match, int *mismatch, int *gap, int *threads);
+
+/*
  * Function: file_open
  * -------------------
  * 	This function opens the input and output files, using the previous args.
@@ -146,5 +182,23 @@ extern int header_parse(FILE* in_file, int *pair_size, unsigned int *q_size,\
  * 	returns: 0 ok, 1 error, 2 parsing is finished
  */
 extern int parse_file(FILE* in_file, FILE* out_file, char* q, char* d);
+
+/*
+ * Function: traceback
+ * -------------------
+ * 	This function takes the filled score matrix and the MVP stack and traces 
+ * 	back all the max values to their root. It then prints out to the out-file
+ * 
+ * 	score_matrix: 2d array for q,d alignment
+ * 	*max_score: pointer to use the max_score stack
+ * 	out_file: the output file to print the results
+ * 	q,d: q and d strings
+ * 	*steps: pointer to count number of traceback steps (call-by-reference)
+ * 	*tb_time: pointer to count runtime (call-by-reference)
+ * 
+ * 	returns: 0 ok, 1 error
+ */
+extern int traceback(int** score_matrix, MVP* *max_score, FILE* out_file, \
+					 char* q, char* d, unsigned int *steps, double *tb_time);
 
 #endif
