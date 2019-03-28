@@ -5,6 +5,7 @@
 # "--cnr" flag: 		compile and run
 # "--compile" flag: 	compile only
 # "--run" flag: 		run only
+# "--perf" flag:		check for cache misses (needs "perf" library installed)
 # "--clean" flag: 		removes generated files
 #
 
@@ -23,24 +24,28 @@ else
 	echo "1) Compile and run [default]"
 	echo "2) Compile only"
 	echo "3) Run only"
-	echo "4) Performance Analysis (needs \"perf\" library)"
+	echo "4) Performance Analysis (needs \"perf\" library installed)"
 	echo "5) Clean project"
 	read -p "Selection: " sel
 	echo
 fi
 
 if [ "${sel}" = "5" ];then
-	if [ -f "serial" ]; then
-		rm serial
+	find serial_* | head -n 1 > tmp
+	if [ -f tmp ]; then
+		rm serial_*
 	fi
-	if [ -f "omp" ]; then
-		rm omp
+	rm tmp
+	find omp_* | head -n 1 > tmp
+	if [ -f tmp ]; then
+		rm omp_*
 	fi
-	find Report_* | head -n 1 > rep
-	if [ -f rep ]; then
+	rm tmp
+	find Report_* | head -n 1 > tmp
+	if [ -f tmp ]; then
 		rm Report_*
 	fi
-	rm rep
+	rm tmp
 	echo "Cleared all generated files"
 elif [ "${sel}" = "4" ];then
 	sh perf.sh
@@ -50,10 +55,5 @@ elif [ "${sel}" = "2" ]; then
 	sh compile.sh
 else
 	sh compile.sh
-	if [ "$?" = 1 ]; then
-		flag="--serial"
-	else
-		flag="--omp"
-	fi
 	sh run.sh "${flag}"
 fi

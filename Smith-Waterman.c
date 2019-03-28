@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 	int threads = 1;
 	
     if (init_parsing(argc, argv, &name, &input, &match, &mismatch, &gap,\
-						&threads) == 1)
+					 &threads) == 1)
 		return 1;
     
 	FILE* in_file;
@@ -40,10 +40,7 @@ int main(int argc, char* argv[]) {
         printf("ERROR: getcwd() failed\n");
         return 1;
     }
-    char thread_str[4];
-	sprintf(thread_str, "%d", threads);
-	char* out_source = concat(cwd, "/Report_", name, "_OMP_", thread_str,\
-								".txt");
+	char* out_source = concat(cwd, "/Report_", name, ".txt");
     
 	if (file_open(input, &in_file, &out_file, out_source) == 1){
         fclose(in_file);
@@ -111,7 +108,7 @@ int main(int argc, char* argv[]) {
 		calculate_score(score_matrix, match, mismatch, gap, threads, q,\
 						d, &max_score, &calc_time);
         if(traceback(score_matrix, &max_score, out_file, q, d, &tb_steps,\
-						&tb_time) == 1){
+					 &tb_time) == 1){
 			for (int i = 0; i < q_size+1; i++)
 				free(score_matrix[i]);
 			free(score_matrix);
