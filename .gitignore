@@ -1,7 +1,7 @@
 Datasets/
 .directory
-serial
-omp
+serial*
+omp*
 Report_*
 labdesc*
 valgrind*
