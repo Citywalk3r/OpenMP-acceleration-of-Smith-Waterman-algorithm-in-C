@@ -47,3 +47,10 @@ gcc -D_GNU_SOURCE -Dsched="${sc3}" -I"${LD_INC}" \
 	-fopenmp -Wall -ggdb3 \
 	"${LD_SRC}"/generic.c "${LD_SRC}"/OMP_functions.c \
 	Smith-Waterman.c -o omp_fine_guided
+
+#
+# Compilation of coarse grain 
+#	
+gcc -D_GNU_SOURCE -I"${LD_INC}" -fopenmp -Wall -ggdb3 \
+	"${LD_SRC}"/generic.c "${lib1}" \
+	Smith-Waterman_coarse.c -o omp_coarse

@@ -10,6 +10,7 @@ echo "2) Serial antidiag"
 echo "3) OpenMP fine static"
 echo "4) OpenMP fine dynamic"
 echo "5) OpenMP fine guided"
+echo "6) OpenMp coarse"
 read -p "Selection: " sel
 echo
 
@@ -19,7 +20,9 @@ read -p "Match: " m
 read -p "Mismatch: " mm
 read -p "Gap: " g
 
-if [ "${sel}" = "5" ]; then
+if [ "${sel}" = "6" ]; then
+	ex="omp_coarse"
+elif [ "${sel}" = "5" ]; then
 	ex="omp_fine_guided"
 elif [ "${sel}" = "4" ]; then
 	ex="omp_fine_dynamic"
@@ -33,6 +36,9 @@ fi
 
 if [ "${sel}" != "1" ] && [ "${sel}" != "2" ]; then 
 	read -p "Threads: " t
+	export OMP_WAIT_POLICY=active
+	export OMP_DYNAMIC=false
+	export OMP_PROC_BIND=true
 	./"${ex}" -name ""${n}"_OMP_"${t}"" -input $PWD/Datasets/"${d}".txt \
 			  -match "${m}" -mismatch "${mm}" -gap "${g}" -threads "${t}"
 else
