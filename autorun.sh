@@ -24,28 +24,16 @@ else
 	echo "1) Compile and run [default]"
 	echo "2) Compile only"
 	echo "3) Run only"
-	echo "4) Performance Analysis (needs \"perf\" library installed)"
+	echo "4) Cache Analysis (needs \"perf\" library installed)"
 	echo "5) Clean project"
 	read -p "Selection: " sel
 	echo
 fi
 
 if [ "${sel}" = "5" ];then
-	find serial_* | head -n 1 > tmp
-	if [ -f tmp ]; then
-		rm serial_*
-	fi
-	rm tmp
-	find omp_* | head -n 1 > tmp
-	if [ -f tmp ]; then
-		rm omp_*
-	fi
-	rm tmp
-	find Report_* | head -n 1 > tmp
-	if [ -f tmp ]; then
-		rm Report_*
-	fi
-	rm tmp
+	rm serial_*
+	rm omp_*
+	rm Report_*
 	echo "Cleared all generated files"
 elif [ "${sel}" = "4" ];then
 	sh perf.sh

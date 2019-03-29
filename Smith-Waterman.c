@@ -140,6 +140,7 @@ int main(int argc, char* argv[]) {
 			((strlen(q))*(strlen(d)))/end_time);
 	printf("Cell Updates Per Second of matrix calculation runtime: %.3f\n",\
 			((strlen(q))*(strlen(d)))/calc_time);
+	
 	for (int i = 0; i < q_size+1; i++)
 		free(score_matrix[i]);
 	free(score_matrix);

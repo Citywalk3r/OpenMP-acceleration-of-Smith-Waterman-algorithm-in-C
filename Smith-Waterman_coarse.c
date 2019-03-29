@@ -60,78 +60,92 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    int check = 0;
-    int pairs = 1;
-	MVP* max_score = NULL;
+	static int check = 0;
+    int pair;
+	static MVP* max_score = NULL;
 	unsigned int cell_count = 0;
 	unsigned int tb_steps = 0;
 	double calc_time = 0.0;
 	double tb_time = 0.0;
-	unsigned int rows = q_size+1;
-	unsigned int columns = d_size+1;
-	int** score_matrix = calloc (rows, sizeof(*score_matrix));
-	for (int i = 0; i < rows; i++)
-		score_matrix[i] = calloc (columns, sizeof(*score_matrix[i]));
-	char* q = malloc(sizeof(char[q_size+1]));
-	char* d = malloc(sizeof(char[d_size+1]));
 	
-	#pragma omp parallel for ordered private(pairs, check, rows, columns, \
-						cell_count, q, d, max_score, calc_time, tb_steps,\
-						tb_time) schedule(static,1) num_threads(threads)
-	for (pairs=1; pairs <= pair_size; pairs++){
-        check = parse_file(in_file, out_file, q, d);
-		fprintf(out_file, "\n");
+	static unsigned int rows;
+	static unsigned int columns;
+	static int** score_matrix;
+	static char *q, *d;
+	
+	if (omp_get_dynamic())
+		omp_set_dynamic(0);
+	
+	#pragma omp threadprivate(check,max_score,rows,columns,score_matrix,q,d)
+	
+	#pragma omp parallel num_threads(threads)
+	{
+		rows = q_size+1;
+		columns = d_size+1;
+		score_matrix = calloc (rows, sizeof(*score_matrix));
+		for (int i = 0; i < rows; i++)
+			score_matrix[i] = calloc (columns, sizeof(*score_matrix[i]));
+		q = malloc(sizeof(char[q_size+1]));
+		d = malloc(sizeof(char[d_size+1]));
+	}
+
+	/*
+	 * Using critical over ordered brought 70% speedup and 65% better times
+	 * than the serial code
+	 * Ordered was 16% slower than serial
+	 * Critical outputs pairs in scrambled order, while ordered did not
+	 */
+	#pragma omp parallel for ordered num_threads(threads) schedule(static,1)
+	for (pair = 1; pair <= pair_size; pair++){
 		
-		/* 
-		 * check to ensure that we have not encountered an error in the dataset
-		 */
-        if (check == 1)
-			printf("Used to free and return here...\n");
-        
-        /*
-		 * specify the space we are using from the allocated memory. At first we 
-		 * allocated the maximum space needed, so we need to shape it according
-		 * to the specific pair
-		 */
-        rows = strlen(q) + 1;
+		#pragma omp critical
+		check = parse_file(in_file, out_file, q, d);
+		
+		if (check == 1){
+			printf("Thread %d encountered error in parsing pair %d\n", \
+					omp_get_thread_num(), pair);
+			pair = pair_size+1;
+        }
+		
+		rows = strlen(q) + 1;
 		columns = strlen(d) + 1;
-		
 		cell_count += rows*columns;
 		calculate_score(score_matrix, match, mismatch, gap, threads, q,\
 						d, &max_score, &calc_time);
-	
-		#pragma omp ordered
-		if(traceback(score_matrix, &max_score, out_file, q, d, &tb_steps,\
-					&tb_time) == 1)
-			printf("Used to free and return here...\n");
-		
-		/*
-		 * emptying the max-values-list, checking if we finished the dataset 
-		 * and/or moving to the next pair
-		 */
-        empty(&max_score);
-		if (check == 2)
-			printf("Used to break here...\n");
-    }
+
+		#pragma omp critical
+		{
+			fprintf(out_file, "\n");
+			if(traceback(score_matrix, &max_score, out_file, q, d, \
+						 &tb_steps, &tb_time) == 1){
+				printf("Thread %d encountered error in traceback, pair %d\n", \
+						omp_get_thread_num(), pair);
+			}
+		}
+		/* Used to break here, up-ed the pair no to get out of the for instead*/
+		if (check == 2){
+			pair = pair_size+1;
+		}
+	}
 	
 	double end_time = gettime()-start_time;
 	printf("Total cells utilized: %u\n", cell_count);
 	printf("Total traceback steps: %u\n", tb_steps);
 	printf("Elapsed time: %.3f s\n", end_time);
-	printf("Total matrix calculation time: %.3f s\n", calc_time);
-	printf("Total Traceback time: %.3f s\n", tb_time);
-	printf("Cell Updates Per Second of total runtime: %.3f\n",\
-			((strlen(q))*(strlen(d)))/end_time);
-	printf("Cell Updates Per Second of matrix calculation runtime: %.3f\n",\
-			((strlen(q))*(strlen(d)))/calc_time);
-	for (int i = 0; i < q_size+1; i++)
-		free(score_matrix[i]);
-	free(score_matrix);
-    fclose(in_file);
-    fclose(out_file);
-	free(q);
-	free(d);
+	
+	#pragma omp parallel num_threads(threads)
+	{
+		for (int i = 0; i < q_size+1; i++)
+			free(score_matrix[i]);
+		free(score_matrix);
+		free(q);
+		free(d);
+		empty(&max_score);
+	}
+	
 	free(out_source);
-    
+	fclose(in_file);
+	fclose(out_file);
+	
 	return 0;
 }

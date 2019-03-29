@@ -52,5 +52,5 @@ gcc -D_GNU_SOURCE -Dsched="${sc3}" -I"${LD_INC}" \
 # Compilation of coarse grain 
 #	
 gcc -D_GNU_SOURCE -I"${LD_INC}" -fopenmp -Wall -ggdb3 \
-	"${LD_SRC}"/generic.c "${lib1}" \
+	"${LD_SRC}"/generic.c "${lib2}" \
 	Smith-Waterman_coarse.c -o omp_coarse
