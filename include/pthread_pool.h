@@ -19,6 +19,7 @@ struct pool {
 	struct pool_queue *q;
 	struct pool_queue *end;
 	pthread_mutex_t q_mtx;
+	pthread_cond_t q_cnd;
 	pthread_t threads[1];
 };
 
