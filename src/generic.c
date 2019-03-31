@@ -8,6 +8,13 @@ char* gap_flag = "-gap";
 char* threads_flag = "-threads";
 int line_size = 256;
 
+int match = -1;
+int mismatch = -1;
+int gap = -1;
+int threads = 1;
+char* name = "";
+char* input = "";
+
 char* concat(const char* s1, const char* s2, const char* s3, const char* s4) {
     char* result = malloc(strlen(s1) + strlen(s2) + strlen(s3) + \
 					strlen(s4) + 1);

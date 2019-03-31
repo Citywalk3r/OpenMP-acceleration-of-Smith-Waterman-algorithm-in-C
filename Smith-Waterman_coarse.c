@@ -7,7 +7,6 @@
  */
  
 #include "generic.h"
-#include "OMP_functions.h"
 
 /*
  * Function: main
@@ -22,12 +21,6 @@
 int main(int argc, char* argv[]) {
 
 	double start_time = gettime();
-    char* name = "";
-    char* input = "";
-    int match = -1;
-    int mismatch = -1;
-    int gap = -1;
-	int threads = 1;
 	
     if (init_parsing(argc, argv, &name, &input, &match, &mismatch, &gap,\
 					 &threads) == 1)
@@ -76,6 +69,7 @@ int main(int argc, char* argv[]) {
 	if (omp_get_dynamic())
 		omp_set_dynamic(0);
 	
+	/* Setting the private values for our threads */
 	#pragma omp threadprivate(check,max_score,rows,columns,score_matrix,q,d)
 	
 	#pragma omp parallel num_threads(threads)

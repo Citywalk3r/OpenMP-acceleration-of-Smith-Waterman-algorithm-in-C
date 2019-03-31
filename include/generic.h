@@ -23,6 +23,13 @@ extern char* gap_flag;
 extern char* threads_flag;
 extern int line_size;
 
+extern int match;
+extern int mismatch;
+extern int gap;
+extern int threads;
+extern char* name;
+extern char* input;
+
 typedef struct MVP{
     unsigned int q;
 	unsigned int d;

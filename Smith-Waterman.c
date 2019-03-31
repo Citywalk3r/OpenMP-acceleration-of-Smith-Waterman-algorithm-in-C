@@ -7,7 +7,7 @@
  */
  
 #include "generic.h"
-#include "OMP_functions.h"
+#include "PTHREAD_functions.h"
 
 /*
  * Function: main
@@ -24,10 +24,6 @@ int main(int argc, char* argv[]) {
 	double start_time = gettime();
     char* name = "";
     char* input = "";
-    int match = -1;
-    int mismatch = -1;
-    int gap = -1;
-	int threads = 1;
 	
     if (init_parsing(argc, argv, &name, &input, &match, &mismatch, &gap,\
 					 &threads) == 1)

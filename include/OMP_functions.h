@@ -2,6 +2,11 @@
  *  Functions used specifically by OMP implementations
  */
 
+/* 
+ * At the moment this header is exactly like its SERIAL counterpart, but for 
+ * scalability reasons we keep both files 
+ */
+
 #ifndef OMP_FUNC_H
 #define OMP_FUNC_H
 
