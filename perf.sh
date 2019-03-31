@@ -47,12 +47,12 @@ if [ "${sel}" != "1" ] && [ "${sel}" != "2" ] && [ "${sel}" != "5" ]; then
 			  -match "${m}" -mismatch "${mm}" -gap "${g}" -threads "${t}"
 elif [ "${sel}" = "5" ]; then
 	read -p "Threads: " t
-# 	perf stat -e cache-references,cache-misses \
-	valgrind --leak-check=full \
-			--show-leak-kinds=all \
-			--track-origins=yes \
-			--verbose \
-			--log-file=valgrind-out.txt \
+# 	valgrind --leak-check=full \
+# 			--show-leak-kinds=all \
+# 			--track-origins=yes \
+# 			--verbose \
+# 			--log-file=valgrind-out.txt \
+	perf stat -e cache-references,cache-misses \
 	./"${ex}" -name ""${n}"_PTH_"${t}"" -input $PWD/Datasets/"${d}".txt \
 			  -match "${m}" -mismatch "${mm}" -gap "${g}" -threads "${t}"
 else

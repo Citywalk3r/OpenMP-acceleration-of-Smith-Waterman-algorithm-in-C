@@ -7,7 +7,6 @@ int trash;
 thread_data_t* make_args(int antidiag, int k, char* q, char* d,\
 						 int** score_matrix){
 	thread_data_t* tdata = malloc(sizeof(thread_data_t));
-	
 	tdata->antidiag = antidiag;
 	tdata->k = k;
 	tdata->q = q;
@@ -25,14 +24,13 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 	int q_limit = strlen(q);
 	int d_limit = strlen(d);
 	int antidiag=1, mv=0, k=0;
+
 	
 	/* Initialize args to pass to queue*/
 	thread_data_t* args;
 	
-	args = make_args(0, 0, q, d, score_matrix);
-	
 	/* Initialize thread pool */
-	struct pool *p = pool_start(inner(args), threads);
+	struct pool *p = pool_start(inner, threads);
 	
 	/* 
 	 * The loop where we fill the queue with tasks to be executed by our
@@ -49,21 +47,24 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 			/* Enqueue args in the pool and free them after it's over */
 			pool_enqueue(p, (void*)args, 1);
 		}
-		/* When an itter is finished wait to ensure no race conditions occur */
-// 		pool_wait(p);
+		/* 
+		 * When an itter is finished wait to ensure no race conditions occur 
+		 * iff the antidiag is small
+		 */
+		if (limSW-limNE < 2*threads)
+			pool_wait(p);
 	}
 	pool_end(p);
 	
 	for (unsigned int i = 1; i <= q_limit; i++){
 		for (unsigned int j = 1; j <= d_limit; j++){
-			if (mv > score_matrix[i][j]){
+			if (mv < score_matrix[i][j]){
 				empty(max_score);
 				mv = score_matrix[i][j];
 				push(max_score, i-1, j-1, score_matrix[i][j]);
 			} else if (mv == score_matrix[i][j]){
 				push(max_score, i-1, j-1, score_matrix[i][j]);
 			} else {
-				empty(max_score);
 			}
 		}
 	}
@@ -73,7 +74,6 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 
 void* inner(void* args){
 	thread_data_t *t_data = args;
-	if (t_data->antidiag == 0) return NULL;
 	int i = t_data->k;
 	int j = (t_data->antidiag - t_data->k) + 1;
 	/* 
@@ -94,5 +94,5 @@ void* inner(void* args){
 		t_data->score_matrix[i][j] = 0;
 	}
 	
-	return NULL;
+	return ((void*) 0);
 }
