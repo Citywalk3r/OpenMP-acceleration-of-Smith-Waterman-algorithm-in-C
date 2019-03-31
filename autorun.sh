@@ -34,6 +34,7 @@ if [ "${sel}" = "5" ];then
 	rm serial_*
 	rm omp_*
 	rm Report_*
+	rm pthread_*
 	echo "Cleared all generated files"
 elif [ "${sel}" = "4" ];then
 	sh perf.sh

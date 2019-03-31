@@ -7,6 +7,8 @@
  */
  
 #include "generic.h"
+#include "SERIAL_functions.h"
+#include <omp.h>
 
 /*
  * Function: main

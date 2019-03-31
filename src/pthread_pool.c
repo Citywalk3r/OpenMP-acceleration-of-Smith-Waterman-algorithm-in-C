@@ -1,6 +1,7 @@
 #include "generic.h"
 #include "pthread_pool.h"
 #include <pthread.h>
+#include <time.h>
 
 static void * thread(void *arg);
 
@@ -16,9 +17,22 @@ void * pool_start(void * (*thread_func)(void *), unsigned int threads) {
 	p->remaining = 0;
 	p->end = NULL;
 	p->q = NULL;
-
+	
+	int numberOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+	pthread_t pthreads[numberOfProcessors];
+	pthread_attr_t attr;
+	cpu_set_t cpuset;
+	pthread_attr_init(&attr);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	srand(time(0));
+	
 	for (i = 0; i < threads; i++) {
-		pthread_create(&p->threads[i], NULL, &thread, p);
+		CPU_ZERO(&cpuset);
+		int randCore = (rand() % numberOfProcessors + 1);
+		int core = i < numberOfProcessors ? i : randCore;
+		CPU_SET(core, &cpuset);
+		pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
+		pthread_create(&p->threads[i], &attr, &thread, p);
 	}
 
 	return p;

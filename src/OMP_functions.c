@@ -1,5 +1,6 @@
 #include "generic.h"
 #include "OMP_functions.h"
+#include <omp.h>
 
 int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 					int threads, char* q, char* d, MVP* *max_score,\
