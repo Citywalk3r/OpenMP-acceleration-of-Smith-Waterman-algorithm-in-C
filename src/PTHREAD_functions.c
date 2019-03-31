@@ -1,14 +1,16 @@
 #include "generic.h"
 #include "pthread_pool.h"
 #include "PTHREAD_functions.h"
+#include "unistd.h"
 
 int trash;
 
-thread_data_t* make_args(int antidiag, int k, char* q, char* d,\
+thread_data_t* make_args(int antidiag, int limSW, int limNE, char* q, char* d,\
 						 int** score_matrix){
 	thread_data_t* tdata = malloc(sizeof(thread_data_t));
 	tdata->antidiag = antidiag;
-	tdata->k = k;
+	tdata->limSW = limSW;
+	tdata->limNE = limNE;
 	tdata->q = q;
 	tdata->d = d;
 	tdata->score_matrix = score_matrix;
@@ -42,17 +44,10 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 		int limSW = antidiag < q_limit ? antidiag : q_limit;
 		int limNE = antidiag < d_limit ? 0 : antidiag-d_limit;
 		
-		for (k = limSW; k > limNE; k--) {
-			args = make_args(antidiag, k, q, d, score_matrix);
-			/* Enqueue args in the pool and free them after it's over */
-			pool_enqueue(p, (void*)args, 1);
-		}
-		/* 
-		 * When an itter is finished wait to ensure no race conditions occur 
-		 * iff the antidiag is small
-		 */
-		if (limSW-limNE < 2*threads)
-			pool_wait(p);
+		args = make_args(antidiag, limSW, limNE, q, d, score_matrix);
+		/* Enqueue args in the pool and free them after it's over */
+		pool_enqueue(p, (void*)args, 1);
+		//COND VAR HERE
 	}
 	pool_end(p);
 	
@@ -74,24 +69,32 @@ int calculate_score(int** score_matrix, int match, int mismatch, int gap,\
 
 void* inner(void* args){
 	thread_data_t *t_data = args;
-	int i = t_data->k;
-	int j = (t_data->antidiag - t_data->k) + 1;
-	/* 
-	* q = i-1, d = j-1, cause score_matrix zero pads q and d
-	* for initialization 
-	*/
-	int diagonal = t_data->q[i-1] == t_data->d[j-1] \
-				   ? (t_data->score_matrix[i-1][j-1] + match) \
-				   : (t_data->score_matrix[i-1][j-1] + mismatch);
-	int up = t_data->score_matrix[i-1][j] + gap;
-	int left = t_data->score_matrix[i][j-1] + gap;
+	
+	for (int k = t_data->limSW; k > t_data->limNE; k--) {
+		int i = k;
+		int j = (t_data->antidiag - k) + 1;
+		
+		if (k > ceil(limSW-limNE/2)){
+			//COND VAR HERE
+		}
+		
+		/* 
+		 * q = i-1, d = j-1, cause score_matrix zero pads q and d
+		 * for initialization 
+		 */
+		int diagonal = t_data->q[i-1] == t_data->d[j-1] \
+					? (t_data->score_matrix[i-1][j-1] + match) \
+					: (t_data->score_matrix[i-1][j-1] + mismatch);
+		int up = t_data->score_matrix[i-1][j] + gap;
+		int left = t_data->score_matrix[i][j-1] + gap;
 
-	/* priority in max: diagonal > up > left */
-	t_data->score_matrix[i][j] = max(diagonal, up, left, &trash);
+		/* priority in max: diagonal > up > left */
+		t_data->score_matrix[i][j] = max(diagonal, up, left, &trash);
 
-	/* if value is less than zero, replace with zero */
-	if (t_data->score_matrix[i][j] < 0){
-		t_data->score_matrix[i][j] = 0;
+		/* if value is less than zero, replace with zero */
+		if (t_data->score_matrix[i][j] < 0){
+			t_data->score_matrix[i][j] = 0;
+		}
 	}
 	
 	return ((void*) 0);

@@ -7,7 +7,7 @@
 
 /* Structure of thread_data_t */
 typedef struct thread_data_t{
-	int q_limit, d_limit, antidiag, k;
+	int q_limit, d_limit, antidiag, limSW, limNE;
 	char* q;
 	char* d;
 	int** score_matrix;
@@ -24,8 +24,8 @@ typedef struct thread_data_t{
  * 
  *  Returns: thread_data_t* tdata
  */
-extern thread_data_t* make_args(int antidiag, int k, char* q, char* d,\
-						 int** score_matrix);
+extern thread_data_t* make_args(int antidiag, int limSW, int limNE, char* q,\
+								char* d, int** score_matrix);
 
 /*
  *  Function: inner
